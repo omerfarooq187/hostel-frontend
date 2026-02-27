@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Spacing for full-width sections */
+  --section-padding: 2.5rem 1rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #4C4C4C;
+  background-color: #FFFFFF;
+  line-height: 1.6;
+}
+
+/* Container utility */
+.container {
+  max-width: 1260px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Button Styles matching Officers Hostel */
+.btn-primary {
+  background-color: #0F0106;
+  color: #FFFFFE;
+  border-radius: 0.375em;
+  padding: calc(0.667em + 2px) calc(1.333em + 2px);
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #B58E67;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: #B58E67;
+  border: 2px solid #B58E67;
+  padding: calc(0.667em + 2px) calc(1.333em + 2px);
+  border-radius: 0.375em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #B58E67;
+  color: #FFFFFE;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  color: #0F0106;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+h1 {
+  font-size: clamp(20px, 1.25rem + ((1vw - 3.2px) * 0.732), 32px);
+}
+
+h2 {
+  font-size: clamp(17.905px, 1.119rem + ((1vw - 3.2px) * 0.616), 28px);
+}
+
+h3 {
+  font-size: clamp(15.747px, 0.984rem + ((1vw - 3.2px) * 0.503), 24px);
+}
+
+
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth scrolling for one-page navigation */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Section spacing for one-page layout */
+/* section {
+  scroll-margin-top: 100px; /* Adjust based on your navbar height */
+} */
+
+/* Active section highlight in navbar */
+/* .nav-active {
+  color: var(--primary) !important;
+  font-weight: 600;
+} */
+
+/* Transparent navbar transitions
+.nav-transparent {
+  background-color: transparent;
+  backdrop-filter: blur(0px);
+  transition: all 0.5s ease;
+}
+
+.nav-solid {
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+} */
+
+/* Hero section offset for fixed navbar */
+/* .hero-offset {
+  padding-top: 80px;
+} */
