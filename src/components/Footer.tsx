@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import logo from "../assets/ogoh_logo.png";
 import {
   BuildingOfficeIcon,
   ChatBubbleLeftRightIcon,
@@ -36,13 +37,20 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-heading-color text-light-color mt-auto font-sans">
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+    <footer className="bg-heading-color text-light-color mt-auto font-sans border-t border-primary/10">
+      <div className="container mx-auto px-4 py-8">
+        {/* Main footer content */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Brand */}
-          <div className="flex items-center space-x-2">
-            <BuildingOfficeIcon className="h-5 w-5 text-primary" />
-            <span className="text-base font-medium">Officers Group of Hostels</span>
+          <div className="flex items-center space-x-3">
+            <img 
+              src={logo} 
+              alt="Officers Group of Hostels" 
+              className="h-8 w-auto object-contain" 
+            />
+            <span className="text-lg font-semibold tracking-tight">
+              Officers Group of Hostels
+            </span>
           </div>
 
           {/* Social Icons */}
@@ -53,7 +61,7 @@ export default function Footer() {
                 <a
                   key={social.name}
                   href={social.url}
-                  className="p-2 bg-black-color text-meta-color hover:bg-primary-shade hover:text-primary rounded-full transition-all duration-300"
+                  className="p-2 bg-black-color text-meta-color rounded-full transition-all duration-300 hover:scale-110 hover:bg-primary hover:text-light-color"
                   aria-label={social.name}
                 >
                   <Icon />
@@ -63,7 +71,7 @@ export default function Footer() {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center space-x-4 text-sm">
+          <div className="flex items-center space-x-5 text-sm">
             <Link to="/" className="text-meta-color hover:text-primary transition-colors">
               Home
             </Link>
@@ -87,17 +95,20 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Copyright line */}
-        <div className="text-center text-meta-color text-xs mt-4">
-          © {currentYear} Officers Hostel. All rights reserved.
+        {/* Copyright line with subtle separator */}
+        <div className="relative mt-6 pt-4 text-center">
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-px bg-primary/30" />
+          <p className="text-meta-color text-xs">
+            © {currentYear} Officers Group of Hostels. All rights reserved.
+          </p>
         </div>
       </div>
 
-      {/* Floating Support Button (optional) */}
+      {/* Floating Support Button */}
       <div className="fixed bottom-6 right-6 z-40">
         <a
-          href="tel:+15551234567"
-          className="p-4 bg-primary text-light-color rounded-full shadow-xl hover:shadow-2xl hover:bg-dark-shade transition-all duration-300 group flex items-center justify-center"
+          href="tel:+923358332755"
+          className="p-4 bg-primary text-light-color rounded-full shadow-lg hover:shadow-xl hover:bg-primary-dark transition-all duration-300 group flex items-center justify-center"
           aria-label="24/7 Support"
         >
           <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -10,7 +10,8 @@ import {
   XMarkIcon,
   UserCircleIcon,
   PrinterIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  ArrowPathIcon, // ← added for spinner
 } from "@heroicons/react/24/outline";
 
 export default function FeesPage() {
@@ -23,6 +24,10 @@ export default function FeesPage() {
   const [searchCnic, setSearchCnic] = useState("");
   const [searchName, setSearchName] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+
+  // Loading states for receipt actions
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [printingId, setPrintingId] = useState(null);
 
   // form state
   const [studentId, setStudentId] = useState("");
@@ -85,16 +90,15 @@ export default function FeesPage() {
   };
 
   const downloadReceipt = async (feeId) => {
+    setDownloadingId(feeId);
     try {
       const res = await api.get(`/api/admin/fee/${feeId}/receipt`, { 
         responseType: "blob" 
       });
       
-      // Create blob URL
       const blob = new Blob([res.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
       
-      // Create a temporary link to trigger download
       const link = document.createElement('a');
       link.href = url;
       link.download = `Fee-Receipt-${feeId}.pdf`;
@@ -102,38 +106,36 @@ export default function FeesPage() {
       link.click();
       document.body.removeChild(link);
       
-      // Clean up
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Failed to download receipt", error);
       alert("Failed to download receipt. Please try again.");
+    } finally {
+      setDownloadingId(null);
     }
   };
 
   const printReceipt = async (feeId) => {
+    setPrintingId(feeId);
     try {
       const res = await api.get(`/api/admin/fee/${feeId}/receipt`, { 
         responseType: "blob" 
       });
       
-      // Create blob URL
       const blob = new Blob([res.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
       
-      // Open in new window for printing
       const printWindow = window.open(url, '_blank');
       
       if (printWindow) {
         printWindow.focus();
         
-        // Wait for the PDF to load, then trigger print
         printWindow.onload = () => {
           setTimeout(() => {
             printWindow.print();
           }, 500);
         };
         
-        // Fallback in case onload doesn't fire
         setTimeout(() => {
           if (printWindow && !printWindow.closed) {
             printWindow.print();
@@ -143,11 +145,12 @@ export default function FeesPage() {
         alert("Pop-up blocked! Please allow pop-ups for this site to print receipts.");
       }
       
-      // Note: We don't revoke the URL immediately as it's used in the new window
-      // The browser will clean it up when the window is closed
+      // No revoke here – browser cleans up when window closes
     } catch (error) {
       console.error("Failed to print receipt", error);
       alert("Failed to print receipt. Please try again.");
+    } finally {
+      setPrintingId(null);
     }
   };
 
@@ -157,24 +160,21 @@ export default function FeesPage() {
     setFees(fees.filter(f => f.id !== feeId));
   };
 
-  // Filter fees by multiple criteria
+  // Filter fees
   const filteredFees = fees.filter(f => {
     const matchesCnic = searchCnic 
       ? f.student.cnic.toLowerCase().includes(searchCnic.toLowerCase())
       : true;
-    
     const matchesName = searchName
       ? f.student.name.toLowerCase().includes(searchName.toLowerCase())
       : true;
-    
     const matchesStatus = statusFilter !== "ALL"
       ? f.status === statusFilter
       : true;
-    
     return matchesCnic && matchesName && matchesStatus;
   });
 
-  // Calculate statistics
+  // Statistics
   const paidFees = fees.filter(f => f.status === "PAID");
   const unpaidFees = fees.filter(f => f.status === "UNPAID");
   const totalCollected = paidFees.reduce((sum, fee) => sum + fee.amount, 0);
@@ -199,7 +199,7 @@ export default function FeesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Fee Management</h1>
@@ -215,8 +215,9 @@ export default function FeesPage() {
         </button>
       </div>
 
-      {/* Statistics Cards */}
+      {/* Stats Cards (unchanged) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* ... same as before ... */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -228,7 +229,6 @@ export default function FeesPage() {
             </div>
           </div>
         </div>
-
         <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -240,7 +240,6 @@ export default function FeesPage() {
             </div>
           </div>
         </div>
-
         <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -252,7 +251,6 @@ export default function FeesPage() {
             </div>
           </div>
         </div>
-
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -268,10 +266,10 @@ export default function FeesPage() {
         </div>
       </div>
 
-      {/* Search and Filter Section */}
+      {/* Search & Filter (unchanged) */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Search by CNIC No */}
+          {/* Search CNIC */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Search by CNIC
@@ -287,8 +285,7 @@ export default function FeesPage() {
               />
             </div>
           </div>
-
-          {/* Search by Name */}
+          {/* Search Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Search by Student Name
@@ -304,7 +301,6 @@ export default function FeesPage() {
               />
             </div>
           </div>
-
           {/* Status Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -327,24 +323,12 @@ export default function FeesPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Student Details
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Month
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Due Date
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Student Details</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Month</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Due Date</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -353,26 +337,18 @@ export default function FeesPage() {
                   <tr key={fee.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {fee.student.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          CNIC: {fee.student.cnic}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{fee.student.name}</div>
+                        <div className="text-sm text-gray-500">CNIC: {fee.student.cnic}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{fee.month}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900">
-                        Rs {fee.amount.toLocaleString()}
-                      </div>
+                      <div className="text-sm font-semibold text-gray-900">Rs {fee.amount.toLocaleString()}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {new Date(fee.dueDate).toLocaleDateString()}
-                      </div>
+                      <div className="text-sm text-gray-900">{new Date(fee.dueDate).toLocaleDateString()}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
@@ -413,32 +389,48 @@ export default function FeesPage() {
                           </>
                         ) : (
                           <>
+                            {/* Print button with loading */}
                             <div className="relative group">
                               <button
                                 onClick={() => printReceipt(fee.id)}
-                                className="inline-flex items-center gap-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+                                disabled={printingId === fee.id}
+                                className="inline-flex items-center gap-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Print Receipt"
                               >
-                                <PrinterIcon className="h-4 w-4" />
+                                {printingId === fee.id ? (
+                                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <PrinterIcon className="h-4 w-4" />
+                                )}
                                 Print
                               </button>
-                              <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
-                                Opens print dialog
-                              </div>
+                              {printingId !== fee.id && (
+                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+                                  Opens print dialog
+                                </div>
+                              )}
                             </div>
                             
+                            {/* Download button with loading */}
                             <div className="relative group">
                               <button
                                 onClick={() => downloadReceipt(fee.id)}
-                                className="inline-flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                                disabled={downloadingId === fee.id}
+                                className="inline-flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Download Receipt"
                               >
-                                <ArrowDownTrayIcon className="h-4 w-4" />
+                                {downloadingId === fee.id ? (
+                                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <ArrowDownTrayIcon className="h-4 w-4" />
+                                )}
                                 Download
                               </button>
-                              <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
-                                Save PDF to device
-                              </div>
+                              {downloadingId !== fee.id && (
+                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+                                  Save PDF to device
+                                </div>
+                              )}
                             </div>
                             
                             <button
@@ -475,7 +467,7 @@ export default function FeesPage() {
         </div>
       </div>
 
-      {/* Add Fee Modal */}
+      {/* Add Fee Modal (unchanged) */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-fadeIn">
@@ -500,9 +492,7 @@ export default function FeesPage() {
 
               <form onSubmit={addFee} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Student
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Student</label>
                   <select
                     value={studentId}
                     onChange={(e) => setStudentId(e.target.value)}
@@ -519,9 +509,7 @@ export default function FeesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Month
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
                   <input
                     type="month"
                     value={month}
@@ -532,9 +520,7 @@ export default function FeesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Amount (₹)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount (₹)</label>
                   <input
                     type="number"
                     placeholder="Enter amount"
@@ -548,9 +534,7 @@ export default function FeesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Due Date
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
                   <input
                     type="date"
                     value={dueDate}

@@ -23,14 +23,14 @@ import {
   BanknotesIcon,
   TagIcon,
   CreditCardIcon,
-  UserIcon,               // added for expense per head (if needed elsewhere)
+  UserIcon,
 } from "@heroicons/react/24/outline";
 
 export default function KitchenInventoryPage() {
   const hostelId = localStorage.getItem("selectedHostelId");
   
-  // Main tabs: Issue (like checkout), Purchase (like ordering), Reports, Other Expenses
-  const [activeTab, setActiveTab] = useState("issue"); // issue, purchase, reports, other
+  // Main tabs: Issue, Purchase, Reports, Other Expenses
+  const [activeTab, setActiveTab] = useState("issue");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -42,12 +42,12 @@ export default function KitchenInventoryPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   
-  // Issue Summary (Left Panel: Items, Right Panel: Issue Summary)
+  // Issue Summary
   const [issueSummary, setIssueSummary] = useState([]);
   const [issuePurpose, setIssuePurpose] = useState("Lunch");
   const [issueRemarks, setIssueRemarks] = useState("");
   
-  // Purchase Summary (Left Panel: Items, Right Panel: Purchase Summary)
+  // Purchase Summary
   const [purchaseSummary, setPurchaseSummary] = useState([]);
   const [purchaseSupplier, setPurchaseSupplier] = useState("");
   const [purchaseRemarks, setPurchaseRemarks] = useState("");
@@ -76,6 +76,14 @@ export default function KitchenInventoryPage() {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   });
+
+  // Report download loading states
+  const [downloadingDailyPDF, setDownloadingDailyPDF] = useState(false);
+  const [downloadingDailyExcel, setDownloadingDailyExcel] = useState(false);
+  const [downloadingWeeklyPDF, setDownloadingWeeklyPDF] = useState(false);
+  const [downloadingWeeklyExcel, setDownloadingWeeklyExcel] = useState(false);
+  const [downloadingMonthlyPDF, setDownloadingMonthlyPDF] = useState(false);
+  const [downloadingMonthlyExcel, setDownloadingMonthlyExcel] = useState(false);
   
   // Other Expenses state
   const [otherExpenseForm, setOtherExpenseForm] = useState({
@@ -129,8 +137,6 @@ export default function KitchenInventoryPage() {
         params: { month, hostelId }
       });
       setMonthlyExpense(res.data);
-      console.log(monthlyExpense)
-      console.log(res.data.consumptionExpense)
     } catch (err) {
       console.error("Failed to load monthly expense", err);
       showAlert("error", "Failed to load monthly expense");
@@ -195,25 +201,21 @@ export default function KitchenInventoryPage() {
     const existingItem = issueSummary.find(summaryItem => summaryItem.id === item.id);
     
     if (existingItem) {
-      // Increment quantity if already in summary
       const newQuantity = existingItem.quantity + 1;
       if (newQuantity > item.quantity) {
         showAlert("error", `Cannot issue more than available stock (${item.quantity} ${item.unit})`);
         return;
       }
-      
       setIssueSummary(issueSummary.map(summaryItem =>
         summaryItem.id === item.id
           ? { ...summaryItem, quantity: newQuantity }
           : summaryItem
       ));
     } else {
-      // Add new item to summary
       if (item.quantity <= 0) {
         showAlert("error", "Item is out of stock");
         return;
       }
-      
       setIssueSummary([
         ...issueSummary,
         {
@@ -230,13 +232,11 @@ export default function KitchenInventoryPage() {
       removeFromIssueSummary(itemId);
       return;
     }
-    
     const item = items.find(i => i.id === itemId);
     if (item && quantity > item.quantity) {
       showAlert("error", `Cannot issue more than available stock (${item.quantity} ${item.unit})`);
       return;
     }
-    
     setIssueSummary(issueSummary.map(summaryItem =>
       summaryItem.id === itemId
         ? { ...summaryItem, quantity: parseFloat(quantity) || 1 }
@@ -260,7 +260,6 @@ export default function KitchenInventoryPage() {
       showAlert("error", "Please add items to issue");
       return;
     }
-
     try {
       for (const summaryItem of issueSummary) {
         await api.post(`/api/admin/inventory/${summaryItem.id}/consume`, null, {
@@ -271,7 +270,6 @@ export default function KitchenInventoryPage() {
           }
         });
       }
-      
       showAlert("success", `Issued ${issueSummary.length} item(s) for ${issuePurpose}`);
       setIssueSummary([]);
       setIssueRemarks("");
@@ -284,9 +282,7 @@ export default function KitchenInventoryPage() {
   // Purchase Stock Functions
   const addToPurchaseSummary = (item) => {
     const existingItem = purchaseSummary.find(summaryItem => summaryItem.id === item.id);
-    
     if (existingItem) {
-      // Increment quantity
       setPurchaseSummary(purchaseSummary.map(summaryItem =>
         summaryItem.id === item.id
           ? { 
@@ -297,7 +293,6 @@ export default function KitchenInventoryPage() {
           : summaryItem
       ));
     } else {
-      // Add new item with default price
       setPurchaseSummary([
         ...purchaseSummary,
         {
@@ -316,7 +311,6 @@ export default function KitchenInventoryPage() {
       removeFromPurchaseSummary(itemId);
       return;
     }
-    
     setPurchaseSummary(purchaseSummary.map(summaryItem =>
       summaryItem.id === itemId
         ? { 
@@ -356,7 +350,6 @@ export default function KitchenInventoryPage() {
       showAlert("error", "Please add items to purchase");
       return;
     }
-
     try {
       for (const summaryItem of purchaseSummary) {
         await api.post(`/api/admin/inventory/${summaryItem.id}/purchase`, null, {
@@ -368,7 +361,6 @@ export default function KitchenInventoryPage() {
           }
         });
       }
-      
       showAlert("success", `Purchased ${purchaseSummary.length} item(s) successfully`);
       setPurchaseSummary([]);
       setPurchaseSupplier("");
@@ -379,14 +371,14 @@ export default function KitchenInventoryPage() {
     }
   };
 
-  // Download Reports
+  // Download Reports (with loading states)
   const downloadDailyPDF = async () => {
+    setDownloadingDailyPDF(true);
     try {
       const res = await api.get("/api/admin/inventory/report/daily/pdf", {
         responseType: "blob",
         params: { hostelId, date: dailyExpenseDate }
       });
-      
       const blob = new Blob([res.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -395,71 +387,22 @@ export default function KitchenInventoryPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Failed to download daily PDF", err);
       showAlert("error", "Failed to download daily report");
-    }
-  };
-
-  const downloadWeeklyPDF = async () => {
-    try {
-      const res = await api.get("/api/admin/inventory/report/weekly/pdf", {
-        responseType: "blob",
-        params: { hostelId, startDate: weeklyStartDate }
-      });
-      
-      const endDate = new Date(weeklyStartDate);
-      endDate.setDate(endDate.getDate() + 6);
-      const formattedEndDate = endDate.toISOString().split('T')[0];
-      
-      const blob = new Blob([res.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `weekly-inventory-report-${weeklyStartDate}-${formattedEndDate}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error("Failed to download weekly PDF", err);
-      showAlert("error", "Failed to download weekly report");
-    }
-  };
-
-  const downloadMonthlyPDF = async () => {
-    try {
-      const [year, month] = monthlyDate.split('-');
-      
-      const res = await api.get("/api/admin/inventory/report/monthly/pdf", {
-        responseType: "blob",
-        params: { 
-          hostelId,
-          year: parseInt(year),
-          month: parseInt(month)
-        }
-      });
-      
-      const blob = new Blob([res.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `monthly-inventory-report-${year}-${month}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error("Failed to download monthly PDF", err);
-      showAlert("error", "Failed to download monthly report");
+    } finally {
+      setDownloadingDailyPDF(false);
     }
   };
 
   const downloadDailyExcel = async () => {
+    setDownloadingDailyExcel(true);
     try {
       const res = await api.get("/api/admin/inventory/report/daily/excel", {
         responseType: "blob",
         params: { hostelId, date: dailyExpenseDate }
       });
-      
       const blob = new Blob([res.data], { 
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
       });
@@ -470,23 +413,52 @@ export default function KitchenInventoryPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Failed to download daily Excel", err);
       showAlert("error", "Failed to download daily Excel report");
+    } finally {
+      setDownloadingDailyExcel(false);
+    }
+  };
+
+  const downloadWeeklyPDF = async () => {
+    setDownloadingWeeklyPDF(true);
+    try {
+      const res = await api.get("/api/admin/inventory/report/weekly/pdf", {
+        responseType: "blob",
+        params: { hostelId, startDate: weeklyStartDate }
+      });
+      const endDate = new Date(weeklyStartDate);
+      endDate.setDate(endDate.getDate() + 6);
+      const formattedEndDate = endDate.toISOString().split('T')[0];
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `weekly-inventory-report-${weeklyStartDate}-${formattedEndDate}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to download weekly PDF", err);
+      showAlert("error", "Failed to download weekly report");
+    } finally {
+      setDownloadingWeeklyPDF(false);
     }
   };
 
   const downloadWeeklyExcel = async () => {
+    setDownloadingWeeklyExcel(true);
     try {
       const res = await api.get("/api/admin/inventory/report/weekly/excel", {
         responseType: "blob",
         params: { hostelId, startDate: weeklyStartDate }
       });
-      
       const endDate = new Date(weeklyStartDate);
       endDate.setDate(endDate.getDate() + 6);
       const formattedEndDate = endDate.toISOString().split('T')[0];
-      
       const blob = new Blob([res.data], { 
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
       });
@@ -497,16 +469,48 @@ export default function KitchenInventoryPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Failed to download weekly Excel", err);
       showAlert("error", "Failed to download weekly Excel report");
+    } finally {
+      setDownloadingWeeklyExcel(false);
+    }
+  };
+
+  const downloadMonthlyPDF = async () => {
+    setDownloadingMonthlyPDF(true);
+    try {
+      const [year, month] = monthlyDate.split('-');
+      const res = await api.get("/api/admin/inventory/report/monthly/pdf", {
+        responseType: "blob",
+        params: { 
+          hostelId,
+          year: parseInt(year),
+          month: parseInt(month)
+        }
+      });
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `monthly-inventory-report-${year}-${month}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to download monthly PDF", err);
+      showAlert("error", "Failed to download monthly report");
+    } finally {
+      setDownloadingMonthlyPDF(false);
     }
   };
 
   const downloadMonthlyExcel = async () => {
+    setDownloadingMonthlyExcel(true);
     try {
       const [year, month] = monthlyDate.split('-');
-      
       const res = await api.get("/api/admin/inventory/report/monthly/excel", {
         responseType: "blob",
         params: { 
@@ -515,7 +519,6 @@ export default function KitchenInventoryPage() {
           month: parseInt(month)
         }
       });
-      
       const blob = new Blob([res.data], { 
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
       });
@@ -526,9 +529,12 @@ export default function KitchenInventoryPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Failed to download monthly Excel", err);
       showAlert("error", "Failed to download monthly Excel report");
+    } finally {
+      setDownloadingMonthlyExcel(false);
     }
   };
 
@@ -536,13 +542,10 @@ export default function KitchenInventoryPage() {
   const loadOtherExpenses = async () => {
     setLoadingOtherExpenses(true);
     try {
-      // Daily total
       const totalRes = await api.get("/api/admin/other-expenses/daily", {
         params: { hostelId, date: otherExpenseDate }
       });
       setOtherExpensesTotal(totalRes.data);
-
-      // List for the same day (range with equal start and end)
       const listRes = await api.get("/api/admin/other-expenses/range", {
         params: {
           hostelId,
@@ -577,7 +580,7 @@ export default function KitchenInventoryPage() {
       });
       showAlert("success", "Expense added successfully");
       setOtherExpenseForm({ title: "", category: "Maintenance", amount: "", remarks: "" });
-      loadOtherExpenses(); // refresh the list for the current date
+      loadOtherExpenses();
     } catch (err) {
       console.error("Failed to add other expense", err);
       showAlert("error", "Failed to add expense");
@@ -586,12 +589,11 @@ export default function KitchenInventoryPage() {
     }
   };
 
-  // Load other expenses when the tab becomes active
   useEffect(() => {
     if (activeTab === "other") {
       loadOtherExpenses();
     }
-  }, [activeTab, otherExpenseDate]); // reload when date changes while on the tab
+  }, [activeTab, otherExpenseDate]);
 
   // Filter items
   const filteredItems = items.filter(item => {
@@ -672,7 +674,7 @@ export default function KitchenInventoryPage() {
         </div>
       </div>
 
-      {/* Stats Bar - NOW 4 COLUMNS */}
+      {/* Stats Bar */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Total Items */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-2xl p-4">
@@ -1225,7 +1227,7 @@ export default function KitchenInventoryPage() {
               </div>
             </div>
           ) : activeTab === "reports" ? (
-            /* Reports Tab */
+            /* Reports Tab with loading indicators */
             <div className="space-y-6">
               {/* Daily Expense Report */}
               <div className="bg-white border border-gray-200 rounded-2xl p-6">
@@ -1257,19 +1259,29 @@ export default function KitchenInventoryPage() {
                   <div className="flex items-end">
                     <button
                       onClick={downloadDailyPDF}
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-colors"
+                      disabled={downloadingDailyPDF}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <DocumentArrowDownIcon className="h-5 w-5" />
-                      Download PDF
+                      {downloadingDailyPDF ? (
+                        <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <DocumentArrowDownIcon className="h-5 w-5" />
+                      )}
+                      {downloadingDailyPDF ? "Preparing PDF..." : "Download PDF"}
                     </button>
                   </div>
                   <div className="flex items-end">
                     <button
                       onClick={downloadDailyExcel}
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-colors"
+                      disabled={downloadingDailyExcel}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <DocumentArrowDownIcon className="h-5 w-5" />
-                      Download Excel
+                      {downloadingDailyExcel ? (
+                        <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <DocumentArrowDownIcon className="h-5 w-5" />
+                      )}
+                      {downloadingDailyExcel ? "Preparing Excel..." : "Download Excel"}
                     </button>
                   </div>
                 </div>
@@ -1343,17 +1355,27 @@ export default function KitchenInventoryPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={downloadWeeklyPDF}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-colors"
+                        disabled={downloadingWeeklyPDF}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <DocumentTextIcon className="h-5 w-5" />
-                        PDF Report
+                        {downloadingWeeklyPDF ? (
+                          <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <DocumentTextIcon className="h-5 w-5" />
+                        )}
+                        {downloadingWeeklyPDF ? "Preparing PDF..." : "PDF Report"}
                       </button>
                       <button
                         onClick={downloadWeeklyExcel}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-colors"
+                        disabled={downloadingWeeklyExcel}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <DocumentArrowDownIcon className="h-5 w-5" />
-                        Excel Report
+                        {downloadingWeeklyExcel ? (
+                          <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <DocumentArrowDownIcon className="h-5 w-5" />
+                        )}
+                        {downloadingWeeklyExcel ? "Preparing Excel..." : "Excel Report"}
                       </button>
                     </div>
                   </div>
@@ -1379,17 +1401,27 @@ export default function KitchenInventoryPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={downloadMonthlyPDF}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl hover:from-teal-700 hover:to-teal-800 transition-colors"
+                        disabled={downloadingMonthlyPDF}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl hover:from-teal-700 hover:to-teal-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <ChartBarIcon className="h-5 w-5" />
-                        PDF Report
+                        {downloadingMonthlyPDF ? (
+                          <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <ChartBarIcon className="h-5 w-5" />
+                        )}
+                        {downloadingMonthlyPDF ? "Preparing PDF..." : "PDF Report"}
                       </button>
                       <button
                         onClick={downloadMonthlyExcel}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-colors"
+                        disabled={downloadingMonthlyExcel}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <DocumentArrowDownIcon className="h-5 w-5" />
-                        Excel Report
+                        {downloadingMonthlyExcel ? (
+                          <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <DocumentArrowDownIcon className="h-5 w-5" />
+                        )}
+                        {downloadingMonthlyExcel ? "Preparing Excel..." : "Excel Report"}
                       </button>
                     </div>
                   </div>
@@ -1546,7 +1578,7 @@ export default function KitchenInventoryPage() {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Add Item Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -1631,6 +1663,7 @@ export default function KitchenInventoryPage() {
         </div>
       )}
 
+      {/* Delete Item Modal */}
       {showDeleteModal && itemToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">

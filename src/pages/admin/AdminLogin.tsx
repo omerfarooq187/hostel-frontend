@@ -9,6 +9,7 @@ import {
   BuildingOfficeIcon,
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
+import logo from "../../assets/ogoh_logo.png";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -58,12 +59,15 @@ const handleLogin = async (e) => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl mb-4">
-            <BuildingOfficeIcon className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center p-3">
+            <img src={logo} className="h-20 w-20 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">
             Hostel Management System
           </h1>
+          <h2 className="text-2xl font-bold text-white">
+            Officers Group of Hostels
+          </h2>
           <p className="text-gray-400 mt-1">
             Administrator Login
           </p>

@@ -100,7 +100,7 @@ export default function HomePage() {
     {
       name: "Ahsan Shafqat",
       role: "Resident since 2023",
-      text: "Best accommodation experience I've had. Highly recommended for all officers.",
+      text: "Best accommodation experience I've had. Highly recommended for all students.",
       rating: 5,
       image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80&auto=format&fit=crop"
     }
@@ -625,7 +625,7 @@ export default function HomePage() {
                     {
                       icon: EnvelopeIcon,
                       title: "Email Us",
-                      details: ["officersgroupofhostels@gmail.com", "skq547@gmail.com"],
+                      details: ["admin@offhostel.org"],
                     }
                   ].map((item, index) => (
                     <div

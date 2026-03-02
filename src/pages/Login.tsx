@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import logo from "../assets/ogoh_logo.png";
 import {
   EnvelopeIcon,
   KeyIcon,
@@ -101,10 +102,10 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl mb-4">
-            <BuildingOfficeIcon className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center p-3">
+            <img src={logo} className="h-20 w-20 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Officers Hostel</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Officers Group of Hostels</h1>
           <p className="text-gray-600 mt-1">Management System Login</p>
         </div>
 

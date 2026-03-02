@@ -67,7 +67,7 @@ export default function StaffManagementPage() {
   const loadStaff = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/api/admin/staff");
+      const res = await api.get("/api/admin/staff", {params: {hostelId}});
       setStaffList(res.data);
     } catch (err) {
       console.error("Failed to load staff", err);
