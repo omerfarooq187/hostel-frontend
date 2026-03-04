@@ -222,15 +222,10 @@ export default function HomePage() {
         
         <div className="container relative mx-auto px-4">
           <div className="max-w-2xl animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#B58E67]/20 backdrop-blur-sm text-[#B58E67] rounded-full mb-8 border border-[#B58E67]/30">
-              <SparklesIcon className="h-4 w-4" />
-              <span className="text-sm font-bold tracking-wider">PREMIUM ACCOMMODATION</span>
-            </div>
-            
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
               Welcome to
               <br />
-              <span className="text-[#B58E67]">Officers Group of Hostels</span>
+              <span className="text-[#F97316]">Officers Group of Hostels</span>
             </h1>
             
             <p className="text-xl text-white/90 mb-10 max-w-xl leading-relaxed">
@@ -256,7 +251,7 @@ export default function HomePage() {
               {!token ? (
                 <Link
                   to="/login"
-                  className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-[#0F0106] hover:bg-[#B58E67] text-white rounded-btn font-bold transition-all duration-300 hover:shadow-xl w-full sm:w-auto animate-fade-in-up"
+                  className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-[#0F0106] hover:bg-[#F97316] text-white rounded-btn font-bold transition-all duration-300 hover:shadow-xl w-full sm:w-auto animate-fade-in-up"
                   style={{ animationDelay: '400ms' }}
                 >
                   <span>Begin Your Experience</span>
@@ -265,7 +260,7 @@ export default function HomePage() {
               ) : (
                 <Link
                   to="/profile"
-                  className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-[#0F0106] hover:bg-[#B58E67] text-white rounded-btn font-bold transition-all duration-300 hover:shadow-xl w-full sm:w-auto animate-fade-in-up"
+                  className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-[#0F0106] hover:bg-[#F97316] text-white rounded-btn font-bold transition-all duration-300 hover:shadow-xl w-full sm:w-auto animate-fade-in-up"
                   style={{ animationDelay: '400ms' }}
                 >
                   <span>Go to Profile</span>
@@ -301,7 +296,7 @@ export default function HomePage() {
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, #B58E67 1px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 1px 1px, #F97316 1px, transparent 0)`,
             backgroundSize: '60px 60px'
           }} />
         </div>
@@ -309,13 +304,13 @@ export default function HomePage() {
         <div className="container relative mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#B58E67]/10 text-[#0F0106] rounded-full mb-6 border border-[#B58E67]/20">
-                <HeartIcon className="h-5 w-5 text-[#B58E67]" />
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
+                <HeartIcon className="h-5 w-5 text-[#F97316]" />
                 <span className="text-sm font-bold tracking-wider">OUR LEGACY</span>
               </div>
               <h2 className="text-4xl font-bold text-[#0F0106] mb-6">
                 A Legacy of{" "}
-                <span className="text-[#B58E67]">Excellence</span>
+                <span className="text-[#F97316]">Excellence</span>
               </h2>
               <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
                 For over 15 years, we've been redefining officer accommodation with an unwavering 
@@ -391,10 +386,10 @@ export default function HomePage() {
                   ].map((item, index) => (
                     <div 
                       key={index} 
-                      className="flex items-start gap-4 p-4 rounded-xl hover:bg-[#B58E67]/5 hover:shadow-md transition-all duration-300 group"
+                      className="flex items-start gap-4 p-4 rounded-xl hover:bg-[#F97316]/5 hover:shadow-md transition-all duration-300 group"
                     >
-                      <div className="p-3 bg-[#B58E67]/10 rounded-lg group-hover:bg-[#B58E67]/20 transition-colors">
-                        <item.icon className="h-6 w-6 text-[#B58E67]" />
+                      <div className="p-3 bg-[#F97316]/10 rounded-lg group-hover:bg-[#F97316]/20 transition-colors">
+                        <item.icon className="h-6 w-6 text-[#F97316]" />
                       </div>
                       <div>
                         <h4 className="font-bold text-[#0F0106] mb-1">{item.title}</h4>
@@ -413,8 +408,8 @@ export default function HomePage() {
       <section id="features" className="py-24 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16 animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#B58E67]/10 text-[#0F0106] rounded-full mb-6 border border-[#B58E67]/20">
-              <StarIcon className="h-5 w-5 text-[#B58E67]" />
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
+              <StarIcon className="h-5 w-5 text-[#F97316]" />
               <span className="text-sm font-bold tracking-wider">PREMIUM FEATURES</span>
             </div>
             <h2 className="text-4xl font-bold text-[#0F0106] mb-6">
@@ -429,7 +424,7 @@ export default function HomePage() {
                 className="bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all duration-500 transform hover:-translate-y-2 animate-fade-in-up"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="p-3 bg-[#B58E67]/10 text-[#B58E67] rounded-xl w-fit mb-6">
+                <div className="p-3 bg-[#F97316]/10 text-[#F97316] rounded-xl w-fit mb-6">
                   <feature.icon className="h-8 w-8" />
                 </div>
                 <h3 className="text-xl font-bold text-[#0F0106] mb-3">
@@ -449,8 +444,8 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#B58E67]/10 text-[#0F0106] rounded-full mb-6 border border-[#B58E67]/20">
-                <HomeModernIcon className="h-5 w-5 text-[#B58E67]" />
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
+                <HomeModernIcon className="h-5 w-5 text-[#F97316]" />
                 <span className="text-sm font-bold tracking-wider">ACCOMMODATION</span>
               </div>
               <h2 className="text-4xl font-bold text-[#0F0106] mb-6">
@@ -507,7 +502,7 @@ export default function HomePage() {
                     <ul className="space-y-2 mb-6">
                       {room.features.map((feature, idx) => (
                         <li key={idx} className="flex items-center gap-2 text-gray-600">
-                          <CheckCircleIcon className="h-4 w-4 text-[#B58E67]" />
+                          <CheckCircleIcon className="h-4 w-4 text-[#F97316]" />
                           {feature}
                         </li>
                       ))}
@@ -516,7 +511,7 @@ export default function HomePage() {
                     {/* Inquire button */}
                     <button
                       onClick={scrollToContact}
-                      className="block w-full px-6 py-3 bg-[#0F0106] hover:bg-[#B58E67] text-white rounded-btn font-bold transition-all duration-300 text-center group-hover:shadow-lg"
+                      className="block w-full px-6 py-3 bg-[#0F0106] hover:bg-[#F97316] text-white rounded-btn font-bold transition-all duration-300 text-center group-hover:shadow-lg"
                     >
                       Inquire Now
                     </button>
@@ -533,8 +528,8 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#B58E67]/20 text-white rounded-full mb-6 border border-[#B58E67]/30">
-                <StarIcon className="h-5 w-5 text-[#B58E67]" />
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F97316]/20 text-white rounded-full mb-6 border border-[#F97316]/30">
+                <StarIcon className="h-5 w-5 text-[#F97316]" />
                 <span className="text-sm font-bold tracking-wider">TESTIMONIALS</span>
               </div>
               <h2 className="text-4xl font-bold text-white mb-6">
@@ -547,7 +542,7 @@ export default function HomePage() {
               {testimonials.map((testimonial, index) => (
               <div
                 key={index}
-                className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 hover:border-[#B58E67]/30 transition-all duration-500 transform hover:-translate-y-2 animate-fade-in-up"
+                className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 hover:border-[#F97316]/30 transition-all duration-500 transform hover:-translate-y-2 animate-fade-in-up"
                 style={{ animationDelay: `${index * 200}ms` }}
               >
                 {/* Rating */}
@@ -562,7 +557,7 @@ export default function HomePage() {
                 
                 {/* Quote */}
                 <div className="relative mb-8">
-                  <div className="text-5xl text-[#B58E67]/20 absolute -top-4 -left-2">"</div>
+                  <div className="text-5xl text-[#F97316]/20 absolute -top-4 -left-2">"</div>
                   <p className="text-white/90 italic text-lg relative z-10">
                     {testimonial.text}
                   </p>
@@ -570,8 +565,8 @@ export default function HomePage() {
                 
                 {/* Author - now using icon instead of image */}
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-[#B58E67]/20 border-2 border-[#B58E67] flex items-center justify-center">
-                    <UserCircleIcon className="h-8 w-8 text-[#B58E67]" />
+                  <div className="w-12 h-12 rounded-full bg-[#F97316]/20 border-2 border-[#F97316] flex items-center justify-center">
+                    <UserCircleIcon className="h-8 w-8 text-[#F97316]" />
                   </div>
                   <div>
                     <div className="font-bold text-white">
@@ -597,8 +592,8 @@ export default function HomePage() {
               {/* Contact Information */}
               <div className="animate-fade-in-up">
                 <div className="mb-12">
-                  <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#B58E67]/10 text-[#0F0106] rounded-full mb-6 border border-[#B58E67]/20">
-                    <EnvelopeIcon className="h-5 w-5 text-[#B58E67]" />
+                  <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
+                    <EnvelopeIcon className="h-5 w-5 text-[#F97316]" />
                     <span className="text-sm font-bold tracking-wider">CONTACT US</span>
                   </div>
                   <h2 className="text-4xl font-bold text-[#0F0106] mb-6">
@@ -630,10 +625,10 @@ export default function HomePage() {
                   ].map((item, index) => (
                     <div
                       key={index}
-                      className="flex items-start gap-4 p-6 rounded-xl border border-gray-200 hover:border-[#B58E67]/50 hover:shadow-md transition-all duration-300"
+                      className="flex items-start gap-4 p-6 rounded-xl border border-gray-200 hover:border-[#F97316]/50 hover:shadow-md transition-all duration-300"
                     >
-                      <div className="p-3 bg-[#B58E67]/10 rounded-lg">
-                        <item.icon className="h-6 w-6 text-[#B58E67]" />
+                      <div className="p-3 bg-[#F97316]/10 rounded-lg">
+                        <item.icon className="h-6 w-6 text-[#F97316]" />
                       </div>
                       <div>
                         <h3 className="text-lg font-bold text-[#0F0106] mb-2">
@@ -683,7 +678,7 @@ export default function HomePage() {
                         value={contactData.name}
                         onChange={handleContactChange}
                         required
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B58E67] focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all"
                       />
                     </div>
                     <div>
@@ -694,7 +689,7 @@ export default function HomePage() {
                         value={contactData.email}
                         onChange={handleContactChange}
                         required
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B58E67] focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all"
                       />
                     </div>
                   </div>
@@ -707,7 +702,7 @@ export default function HomePage() {
                       value={contactData.subject}
                       onChange={handleContactChange}
                       required
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B58E67] focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all"
                     />
                   </div>
                   
@@ -719,14 +714,14 @@ export default function HomePage() {
                       value={contactData.message}
                       onChange={handleContactChange}
                       required
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B58E67] focus:border-transparent transition-all resize-none"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all resize-none"
                     />
                   </div>
                   
                   <button
                     type="submit"
                     disabled={contactLoading}
-                    className="w-full px-6 py-3 bg-[#0F0106] hover:bg-[#B58E67] text-white rounded-btn font-bold transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-6 py-3 bg-[#0F0106] hover:bg-[#F97316] text-white rounded-btn font-bold transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {contactLoading ? "Sending..." : "Send Message"}
                   </button>

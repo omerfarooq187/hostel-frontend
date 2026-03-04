@@ -67,6 +67,14 @@ export default function StudentsPage() {
     message: "",
   });
 
+  // Helper function to validate CNIC format
+  const validateCNIC = (cnic) => {
+    if (!cnic) return false;
+    // Pakistani CNIC format: 12345-1234567-1 or 1234512345671
+    const cnicRegex = /^\d{5}-\d{7}-\d{1}$|^\d{13}$/;
+    return cnicRegex.test(cnic);
+  };
+
   const showError = (title, message) => {
     setErrorDialog({
       show: true,
@@ -192,8 +200,12 @@ export default function StudentsPage() {
       setSelectedUser(student.user);
       setUserSearch(`${student.user.name} (${student.user.email})`);
     } else {
-      // For manually admitted students, show name directly
-      setSelectedUser({ name: student.name, email: "Manual Admission" });
+      // For manually admitted students, show name directly but don't allow user changes
+      setSelectedUser({ 
+        id: null, 
+        name: student.name, 
+        email: "Manual Admission - No Account" 
+      });
       setUserSearch(`${student.name} (Manual Admission)`);
     }
     
@@ -207,6 +219,12 @@ export default function StudentsPage() {
       showError("Validation Error", "CNIC is required");
       return;
     }
+
+    if (!validateCNIC(cnic)) {
+      showError("Validation Error", "Please enter a valid CNIC format (12345-1234567-1 or 13 digits)");
+      return;
+    }
+
     if (!editingStudentId && !selectedUser) {
       showError("Validation Error", "Please select a user");
       return;
@@ -266,6 +284,18 @@ export default function StudentsPage() {
 
     if (!manualName || !manualCnic) {
       showError("Validation Error", "Name and CNIC are required");
+      return;
+    }
+
+    if (!validateCNIC(manualCnic)) {
+      showError("Validation Error", "Please enter a valid CNIC format (12345-1234567-1 or 13 digits)");
+      return;
+    }
+
+    // Check if CNIC already exists in students list
+    const existingStudent = students.find(s => s.cnic === manualCnic);
+    if (existingStudent) {
+      showError("Duplicate CNIC", "A student with this CNIC already exists");
       return;
     }
 
@@ -449,119 +479,158 @@ export default function StudentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {students.map((student) => {
-                const allocation = allocationsMap[student.id];
-                const isAllocated = allocation?.active === true;
-                const isManualAdmission = student.user === null;
-                
-                return (
-                  <tr key={student.id} className="hover:bg-gray-50 transition-colors duration-200">
-                    <td className="py-4 px-6">
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {student.user ? student.user.name : student.name}
+              {students.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <UserGroupIcon className="h-12 w-12 text-gray-400 mb-4" />
+                      <p className="text-gray-600 font-medium mb-2">No students found</p>
+                      <p className="text-gray-500 text-sm mb-4">
+                        Get started by adding your first student
+                      </p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={openAddModal}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          <PlusIcon className="h-4 w-4" />
+                          Add with Account
+                        </button>
+                        <button
+                          onClick={openManualModal}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <UserPlusIcon className="h-4 w-4" />
+                          Manual Admission
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                students.map((student) => {
+                  const allocation = allocationsMap[student.id];
+                  const isAllocated = allocation?.active === true;
+                  const isManualAdmission = student.user === null;
+                  
+                  return (
+                    <tr key={student.id} className="hover:bg-gray-50 transition-colors duration-200">
+                      <td className="py-4 px-6">
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {student.user ? student.user.name : student.name}
+                          </div>
+                          {student.user ? (
+                            <>
+                              <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                                <EnvelopeIcon className="h-3 w-3" />
+                                {student.user.email}
+                              </div>
+                              <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                                <IdentificationIcon className="h-3 w-3" />
+                                CNIC: {student.cnic}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                                <UserPlusIcon className="h-3 w-3" />
+                                Manual Admission
+                              </div>
+                              <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                                <IdentificationIcon className="h-3 w-3" />
+                                CNIC: {student.cnic}
+                              </div>
+                            </>
+                          )}
                         </div>
-                        {student.user ? (
-                          <>
-                            <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                              <EnvelopeIcon className="h-3 w-3" />
-                              {student.user.email}
-                            </div>
-                            <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                              <AcademicCapIcon className="h-3 w-3" />
-                              CNIC: {student.cnic}
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                              <UserPlusIcon className="h-3 w-3" />
-                              Manual Admission
-                            </div>
-                            <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                              <IdentificationIcon className="h-3 w-3" />
-                              CNIC: {student.cnic}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-1 text-gray-700">
-                        <PhoneIcon className="h-4 w-4" />
-                        {student.phone || "Not provided"}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{student.guardianName || "N/A"}</div>
-                        {student.guardianPhone && (
-                          <div className="text-sm text-gray-600">{student.guardianPhone}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          isManualAdmission
-                            ? "bg-teal-100 text-teal-800"
-                            : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {isManualAdmission ? (
-                          <>
-                            <UserPlusIcon className="h-3 w-3 mr-1" />
-                            Manual
-                          </>
-                        ) : (
-                          <>
-                            <UserIcon className="h-3 w-3 mr-1" />
-                            With Account
-                          </>
-                        )}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          isAllocated
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {isAllocated ? "Allocated" : "Not Allocated"}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-1 text-gray-700">
-                        <span className="text-gray-700 font-medium">₨</span>
-                        {totalCollections[student.id] !== undefined 
-                          ? totalCollections[student.id]
-                          : "Loading..."}
-
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => openEditModal(student)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-medium transition-colors duration-200"
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-1 text-gray-700">
+                          <PhoneIcon className="h-4 w-4" />
+                          {student.phone || "Not provided"}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{student.guardianName || "N/A"}</div>
+                          {student.guardianPhone && (
+                            <div className="text-sm text-gray-600">{student.guardianPhone}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            isManualAdmission
+                              ? "bg-teal-100 text-teal-800"
+                              : "bg-blue-100 text-blue-800"
+                          }`}
                         >
-                          <PencilIcon className="h-4 w-4" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(student.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg font-medium transition-colors duration-200"
+                          {isManualAdmission ? (
+                            <>
+                              <UserPlusIcon className="h-3 w-3 mr-1" />
+                              Manual
+                            </>
+                          ) : (
+                            <>
+                              <UserIcon className="h-3 w-3 mr-1" />
+                              With Account
+                            </>
+                          )}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            isAllocated
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
                         >
-                          <TrashIcon className="h-4 w-4" />
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                          {isAllocated ? "Allocated" : "Not Allocated"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 relative group">
+                        <div className="flex items-center gap-1 text-gray-700">
+                          <span className="text-gray-700 font-medium">₨</span>
+                          {totalCollections[student.id] !== undefined ? (
+                            <>
+                              {totalCollections[student.id].toLocaleString()}
+                              <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
+                                Total fees collected
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-gray-400 flex items-center gap-1">
+                              <ArrowPathIcon className="h-3 w-3 animate-spin" />
+                              Loading...
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openEditModal(student)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-medium transition-colors duration-200"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(student.id)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg font-medium transition-colors duration-200"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
@@ -738,6 +807,20 @@ const Modal = memo(({
         </div>
         
         <form onSubmit={onSubmit} className="p-6 space-y-4">
+          {editingStudentId && selectedUser && selectedUser.id === null && (
+            <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg mb-4">
+              <div className="flex items-center gap-2">
+                <UserPlusIcon className="h-5 w-5 text-purple-600" />
+                <div>
+                  <p className="font-medium text-purple-800">Manual Admission Student</p>
+                  <p className="text-sm text-purple-700">
+                    This student was admitted manually. You can update their details but cannot link to a user here.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!editingStudentId && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -811,12 +894,12 @@ const Modal = memo(({
             </label>
             <input
               type="text"
-              placeholder="Enter CNIC"
+              placeholder="Enter CNIC (12345-1234567-1)"
               value={cnic}
               onChange={(e) => setCnic(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              required
               disabled={actionLoading}
+              required
             />
           </div>
 
@@ -952,13 +1035,14 @@ const ManualAdmissionModal = memo(({
           </label>
           <input
             type="text"
-            placeholder="Enter CNIC"
+            placeholder="Enter CNIC (12345-1234567-1)"
             value={manualCnic}
             onChange={(e) => setManualCnic(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
             required
             disabled={actionLoading}
           />
+          <p className="text-xs text-gray-500 mt-1">Format: 12345-1234567-1 or 13 digits</p>
         </div>
 
         <div>
@@ -1013,7 +1097,7 @@ const ManualAdmissionModal = memo(({
               <p className="text-sm font-medium text-green-800 mb-1">Manual Admission Note</p>
               <p className="text-xs text-green-700">
                 This student will be created without a user account. They won't have login access.
-                To add login access later, associate them with an existing user.
+                To add login access later, associate them with an existing user using the same CNIC.
               </p>
             </div>
           </div>

@@ -81,6 +81,7 @@ export default function Profile() {
       try {
         const feesRes = await api.get("/api/student/me/fees");
         setFees(feesRes.data);
+        console.log(feesRes.data)
       } catch (feesErr) {
         setFees([]);
       }
@@ -165,7 +166,7 @@ export default function Profile() {
             Paid
           </span>
         );
-      case 'pending':
+      case 'unpaid':
         return (
           <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
             <ClockIcon className="h-4 w-4 inline mr-1" />

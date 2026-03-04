@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import api from "../api/axios";
 import {
   UserIcon,
@@ -17,6 +17,7 @@ import {
 export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [cnic, setCnic] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,8 +25,6 @@ export default function Register() {
   const [success, setSuccess] = useState("");
   const [verificationSent, setVerificationSent] = useState(false);
   const [resending, setResending] = useState(false);
-
-  const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -51,7 +50,8 @@ export default function Register() {
       // Backend returns: { "message": "Account created. Please verify your email" }
       const response = await api.post("/api/auth/signup", { 
         name, 
-        email, 
+        email,
+        cnic,
         password 
       });
       
@@ -218,6 +218,27 @@ export default function Register() {
                       placeholder="john@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                {/* Cnic Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    CNIC
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                      <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="Text"
+                      placeholder="0000000000000"
+                      value={cnic}
+                      onChange={(e) => setCnic(e.target.value)}
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       required
                       disabled={loading}
