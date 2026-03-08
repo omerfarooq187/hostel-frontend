@@ -17,6 +17,7 @@ import {
   FireIcon,    // for gym
   BuildingLibraryIcon,
   UserCircleIcon, // for masjid
+  BuildingOffice2Icon, // for branches
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
@@ -39,7 +40,7 @@ const BedIcon = ({ className = "h-6 w-6" }) => (
 export default function HomePage() {
   const { token } = useAuth();
   const [scrolled, setScrolled] = useState(false);
-  const [activeRoom, setActiveRoom] = useState(0);
+  const [activeBranch, setActiveBranch] = useState(0);
 
   // Contact form state
   const [contactData, setContactData] = useState({
@@ -52,32 +53,28 @@ export default function HomePage() {
   const [contactSuccess, setContactSuccess] = useState("");
   const [contactError, setContactError] = useState("");
   
-  // Room data – prices removed
-  const rooms = [
+  // Branch data – replacing rooms with branches
+  const branches = [
     {
-      type: "Standard Suite",
-      features: ["Single Bed", "Private Bathroom", "Wi-Fi 6", "Smart AC"],
-      amenities: ["Wifi", "TV", "AC", "Security"],
+      name: "Officers Hostel Mandra Br-1",
+      location: "Thandi Sarak near UBL bank Main G.T Road, Mandra, Rawalpindi",
+      features: ["Single & Double Rooms", "Mess Facility", "Gym", "Prayer Area", "24/7 Security"],
       image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80",
-      rating: 4.8,
-      reviews: 124
-    },
-    {
-      type: "Deluxe Room",
-      features: ["Double Bed", "Ensuite Bath", "Smart TV", "Mini-bar"],
-      amenities: ["Wifi", "TV", "AC", "Bar", "Room Service"],
-      image: "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800&q=80",
       rating: 4.9,
-      reviews: 89,
-      featured: true
+      reviews: 156,
+      capacity: "100+ Students",
+      established: "2020"
     },
     {
-      type: "Executive Suite",
-      features: ["King Bed", "Living Area", "Kitchenette", "Private Balcony"],
-      amenities: ["Wifi", "TV", "AC", "Kitchen", "Balcony", "Workspace"],
-      image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80",
+      name: "Officers Hostel Islamabad Br-2",
+      location: "Lane 10, Street 2 , Hostel City Islamabad",
+      features: ["Executive Suites", "Smart Classrooms", "Library", "Cafeteria", "High-Speed WiFi"],
+      image: "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800&q=80",
       rating: 5.0,
-      reviews: 67
+      reviews: 112,
+      capacity: "100+ Students",
+      established: "2023",
+      featured: true
     }
   ];
   
@@ -85,22 +82,22 @@ export default function HomePage() {
   const testimonials = [
     {
       name: "Hamza Ahmed",
-      role: "Resident since 2022",
-      text: "The Officers Hostel exceeded all my expectations. The attention to detail and service is exceptional.",
+      role: "Resident at Mandra Branch",
+      text: "The Officers Hostel Mandra exceeded all my expectations. The attention to detail and service is exceptional.",
       rating: 5,
       image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80&auto=format&fit=crop"
     },
     {
       name: "Tauqeer Zahoor",
-      role: "Resident since 2021",
-      text: "Perfect blend of comfort and professionalism. The facilities are top-notch and the staff is wonderful.",
+      role: "Resident at Islamabad Branch",
+      text: "Perfect blend of comfort and professionalism. The facilities in Islamabad branch are top-notch and the staff is wonderful.",
       rating: 5,
       image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&q=80&auto=format&fit=crop"
     },
     {
       name: "Ahsan Shafqat",
       role: "Resident since 2023",
-      text: "Best accommodation experience I've had. Highly recommended for all students.",
+      text: "Best accommodation experience I've had. Highly recommended for all students across both branches.",
       rating: 5,
       image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80&auto=format&fit=crop"
     }
@@ -111,7 +108,7 @@ export default function HomePage() {
     {
       icon: ShieldCheckIcon,
       title: "24/7 Security",
-      description: "Military-grade security with biometric access"
+      description: "Military-grade security with biometric access at both branches"
     },
     {
       icon: WifiIcon,
@@ -121,12 +118,12 @@ export default function HomePage() {
     {
       icon: UserGroupIcon,
       title: "Elite Community",
-      description: "Network with fellow officers"
+      description: "Network with fellow officers across all branches"
     },
     {
       icon: CalendarIcon,
       title: "Flexible Stays",
-      description: "Short & long-term accommodation"
+      description: "Short & long-term accommodation available"
     },
     {
       icon: TrophyIcon,
@@ -147,6 +144,16 @@ export default function HomePage() {
       icon: BuildingLibraryIcon,
       title: "Masjid / Prayer Room",
       description: "Spacious prayer area for daily prayers and Jummah"
+    },
+    {
+      icon: SparklesIcon,
+      title: "Buffet System",
+      description: "Delicious and nutritious meals with variety in our premium buffet"
+    },
+    {
+      icon: HomeModernIcon,
+      title: "Air Conditioned",
+      description: "All rooms fully air-conditioned for your comfort"
     }
   ];
 
@@ -154,8 +161,8 @@ export default function HomePage() {
   const stats = [
     { value: "99.8%", label: "Satisfaction Rate" },
     { value: "24/7", label: "Security" },
-    { value: "300+", label: "Happy Residents" },
-    { value: "5+", label: "Years Experience" }
+    { value: "350+", label: "Happy Residents" },
+    { value: "2", label: "Branches" }
   ];
 
   // Handle scroll for animations
@@ -163,25 +170,30 @@ export default function HomePage() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 100);
       
-      // Auto-rotate rooms on scroll
+      // Auto-rotate branches on scroll
       const scrollPosition = window.pageYOffset;
-      const roomSection = document.getElementById('rooms');
-      if (roomSection) {
-        const roomPosition = roomSection.offsetTop;
-        if (scrollPosition > roomPosition - 500) {
-          const roomIndex = Math.floor((scrollPosition - roomPosition + 500) / 300) % rooms.length;
-          setActiveRoom(roomIndex);
+      const branchSection = document.getElementById('branches');
+      if (branchSection) {
+        const branchPosition = branchSection.offsetTop;
+        if (scrollPosition > branchPosition - 500) {
+          const branchIndex = Math.floor((scrollPosition - branchPosition + 500) / 300) % branches.length;
+          setActiveBranch(branchIndex);
         }
       }
     };
     
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [branches.length]);
 
   // Scroll to contact section
   const scrollToContact = () => {
     document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Scroll to branches section
+  const scrollToBranches = () => {
+    document.getElementById('branches')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   // Contact form handlers
@@ -221,28 +233,30 @@ export default function HomePage() {
         </div>
         
         <div className="container relative mx-auto px-4">
-          <div className="max-w-2xl animate-fade-in-up">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-              Welcome to
-              <br />
-              <span className="text-[#F97316]">Officers Group of Hostels</span>
-            </h1>
+          <div className="max-w-3xl animate-fade-in-up">
+
+          <h1 className="text-3xl sm:whitespace-nowrap sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-[#FF8C00] leading-tight">
+            Welcome to Officers Group of Hostels
+          </h1>
             
-            <p className="text-xl text-white/90 mb-10 max-w-xl leading-relaxed">
-              Experience premium accommodation designed for officers with world-class 
-              amenities and exceptional service in a secure, professional environment.
+            {/* Spacing between heading and paragraph */}
+            <div className="h-4 sm:h-6"></div>
+            
+            <p className="text-lg sm:text-xl text-white/90 max-w-xl leading-relaxed">
+              Experience premium accommodation designed for students with world-class 
+              amenities and exceptional service across our branches in Mandra and Islamabad.
             </p>
             
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mt-8 sm:mt-10 mb-12">
               {stats.map((stat, index) => (
                 <div 
                   key={index}
-                  className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 animate-fade-in-up"
+                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/20 animate-fade-in-up"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
-                  <div className="text-sm text-white/70">{stat.label}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-white mb-1">{stat.value}</div>
+                  <div className="text-xs sm:text-sm text-white/70">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -251,33 +265,30 @@ export default function HomePage() {
               {!token ? (
                 <Link
                   to="/login"
-                  className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-[#0F0106] hover:bg-[#F97316] text-white rounded-btn font-bold transition-all duration-300 hover:shadow-xl w-full sm:w-auto animate-fade-in-up"
+                  className="group inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-bold transition-all duration-300 hover:shadow-xl w-full sm:w-auto animate-fade-in-up text-sm sm:text-base"
                   style={{ animationDelay: '400ms' }}
                 >
                   <span>Begin Your Experience</span>
-                  <ArrowTopRightOnSquareIcon className="h-5 w-5 group-hover:rotate-45 transition-transform" />
+                  <ArrowTopRightOnSquareIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:rotate-45 transition-transform" />
                 </Link>
               ) : (
                 <Link
                   to="/profile"
-                  className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-[#0F0106] hover:bg-[#F97316] text-white rounded-btn font-bold transition-all duration-300 hover:shadow-xl w-full sm:w-auto animate-fade-in-up"
+                  className="group inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-bold transition-all duration-300 hover:shadow-xl w-full sm:w-auto animate-fade-in-up text-sm sm:text-base"
                   style={{ animationDelay: '400ms' }}
                 >
                   <span>Go to Profile</span>
-                  <ArrowTopRightOnSquareIcon className="h-5 w-5 group-hover:rotate-45 transition-transform" />
+                  <ArrowTopRightOnSquareIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:rotate-45 transition-transform" />
                 </Link>
               )}
               
               <button
-                onClick={() => {
-                  const rooms = document.getElementById('rooms');
-                  rooms?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-transparent border-2 border-white/30 hover:border-white text-white rounded-btn font-bold transition-all duration-300 w-full sm:w-auto backdrop-blur-sm animate-fade-in-up"
+                onClick={scrollToBranches}
+                className="group inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-bold transition-all duration-300 hover:shadow-xl w-full sm:w-auto animate-fade-in-up text-sm sm:text-base"
                 style={{ animationDelay: '500ms' }}
               >
-                <span>Explore Rooms</span>
-                <ChevronRightIcon className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                <span>Explore Branches</span>
+                <ChevronRightIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
@@ -292,7 +303,7 @@ export default function HomePage() {
       </section>
       
       {/* ABOUT SECTION */}
-      <section id="about" className="py-24 bg-white relative">
+      <section id="about" className="py-16 sm:py-24 bg-white relative">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
@@ -303,52 +314,52 @@ export default function HomePage() {
         
         <div className="container relative mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16 animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
-                <HeartIcon className="h-5 w-5 text-[#F97316]" />
-                <span className="text-sm font-bold tracking-wider">OUR LEGACY</span>
+            <div className="text-center mb-12 sm:mb-16 animate-fade-in-up">
+              <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
+                <HeartIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#F97316]" />
+                <span className="text-xs sm:text-sm font-bold tracking-wider">OUR LEGACY</span>
               </div>
-              <h2 className="text-4xl font-bold text-[#0F0106] mb-6">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#0F0106] mb-4 sm:mb-6">
                 A Legacy of{" "}
                 <span className="text-[#F97316]">Excellence</span>
               </h2>
-              <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+              <p className="text-gray-600 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed px-4">
                 For over 15 years, we've been redefining officer accommodation with an unwavering 
-                commitment to luxury, security, and community.
+                commitment to luxury, security, and community across our branches.
               </p>
             </div>
             
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               {/* Image Gallery */}
-              <div className="relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-6">
+              <div className="relative animate-fade-in-up px-4 sm:px-0" style={{ animationDelay: '200ms' }}>
+                <div className="grid grid-cols-2 gap-4 sm:gap-6">
+                  <div className="space-y-4 sm:space-y-6">
                     <img
                       src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&q=80"
                       alt="Lobby"
-                      className="rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
+                      className="rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
                     />
                     <img
                       src="https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=600&q=80"
                       alt="Dining"
-                      className="rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
+                      className="rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
                     />
                   </div>
-                  <div className="space-y-6 pt-12">
+                  <div className="space-y-4 sm:space-y-6 pt-6 sm:pt-12">
                     <img
                       src="https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=600&q=80"
                       alt="Gym"
-                      className="rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
+                      className="rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
                     />
                     <div className="relative">
                       <img
                         src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80"
                         alt="Pool"
-                        className="rounded-2xl shadow-lg"
+                        className="rounded-xl sm:rounded-2xl shadow-lg"
                       />
-                      <div className="absolute -bottom-4 -right-4 bg-[#0F0106] text-white px-6 py-4 rounded-2xl shadow-xl">
-                        <div className="text-2xl font-bold">2022</div>
-                        <div className="text-sm opacity-90">Established</div>
+                      <div className="absolute -bottom-3 sm:-bottom-4 -right-3 sm:-right-4 bg-[#0F0106] text-white px-4 sm:px-6 py-2 sm:py-4 rounded-xl sm:rounded-2xl shadow-xl">
+                        <div className="text-xl sm:text-2xl font-bold">2020</div>
+                        <div className="text-xs sm:text-sm opacity-90">Established</div>
                       </div>
                     </div>
                   </div>
@@ -356,22 +367,22 @@ export default function HomePage() {
               </div>
               
               {/* Content */}
-              <div className="space-y-8 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-                <h3 className="text-2xl font-bold text-[#0F0106]">
+              <div className="space-y-6 sm:space-y-8 animate-fade-in-up px-4 sm:px-0" style={{ animationDelay: '300ms' }}>
+                <h3 className="text-xl sm:text-2xl font-bold text-[#0F0106]">
                   Where Tradition Meets Modern Luxury
                 </h3>
                 
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {[
                     {
                       icon: ShieldCheckIcon,
                       title: "Military-Grade Security",
-                      description: "Biometric access, 24/7 surveillance, and dedicated security personnel"
+                      description: "Biometric access, 24/7 surveillance, and dedicated security personnel at both branches"
                     },
                     {
                       icon: UserGroupIcon,
                       title: "Elite Community",
-                      description: "Network with fellow officers in exclusive social events"
+                      description: "Network with fellow officers in exclusive events across all branches"
                     },
                     {
                       icon: TrophyIcon,
@@ -381,19 +392,19 @@ export default function HomePage() {
                     {
                       icon: KeyIcon,
                       title: "Concierge Service",
-                      description: "Personalized assistance for all your needs"
+                      description: "Personalized assistance for all your needs at every location"
                     }
                   ].map((item, index) => (
                     <div 
                       key={index} 
-                      className="flex items-start gap-4 p-4 rounded-xl hover:bg-[#F97316]/5 hover:shadow-md transition-all duration-300 group"
+                      className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl hover:bg-[#F97316]/5 hover:shadow-md transition-all duration-300 group"
                     >
-                      <div className="p-3 bg-[#F97316]/10 rounded-lg group-hover:bg-[#F97316]/20 transition-colors">
-                        <item.icon className="h-6 w-6 text-[#F97316]" />
+                      <div className="p-2 sm:p-3 bg-[#F97316]/10 rounded-lg group-hover:bg-[#F97316]/20 transition-colors">
+                        <item.icon className="h-5 w-5 sm:h-6 sm:w-6 text-[#F97316]" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-[#0F0106] mb-1">{item.title}</h4>
-                        <p className="text-gray-600">{item.description}</p>
+                        <h4 className="font-bold text-[#0F0106] mb-1 text-sm sm:text-base">{item.title}</h4>
+                        <p className="text-gray-600 text-sm sm:text-base">{item.description}</p>
                       </div>
                     </div>
                   ))}
@@ -405,32 +416,32 @@ export default function HomePage() {
       </section>
       
       {/* FEATURES SECTION */}
-      <section id="features" className="py-24 bg-gray-50">
+      <section id="features" className="py-16 sm:py-24 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16 animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
-              <StarIcon className="h-5 w-5 text-[#F97316]" />
-              <span className="text-sm font-bold tracking-wider">PREMIUM FEATURES</span>
+          <div className="text-center mb-12 sm:mb-16 animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
+              <StarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#F97316]" />
+              <span className="text-xs sm:text-sm font-bold tracking-wider">PREMIUM FEATURES</span>
             </div>
-            <h2 className="text-4xl font-bold text-[#0F0106] mb-6">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#0F0106] mb-4 sm:mb-6">
               Unmatched Comfort & Amenities
             </h2>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {features.map((feature, index) => (
               <div 
                 key={index}
-                className="bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all duration-500 transform hover:-translate-y-2 animate-fade-in-up"
+                className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-md hover:shadow-xl transition-all duration-500 transform hover:-translate-y-2 animate-fade-in-up"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="p-3 bg-[#F97316]/10 text-[#F97316] rounded-xl w-fit mb-6">
-                  <feature.icon className="h-8 w-8" />
+                <div className="p-2 sm:p-3 bg-[#F97316]/10 text-[#F97316] rounded-xl w-fit mb-4 sm:mb-6">
+                  <feature.icon className="h-6 w-6 sm:h-8 sm:w-8" />
                 </div>
-                <h3 className="text-xl font-bold text-[#0F0106] mb-3">
+                <h3 className="text-lg sm:text-xl font-bold text-[#0F0106] mb-2 sm:mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-600 text-sm sm:text-base">
                   {feature.description}
                 </p>
               </div>
@@ -439,71 +450,89 @@ export default function HomePage() {
         </div>
       </section>
       
-      {/* ROOMS SECTION */}
-      <section id="rooms" className="py-24 bg-white">
+      {/* BRANCHES SECTION */}
+      <section id="branches" className="py-16 sm:py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16 animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
-                <HomeModernIcon className="h-5 w-5 text-[#F97316]" />
-                <span className="text-sm font-bold tracking-wider">ACCOMMODATION</span>
+            <div className="text-center mb-12 sm:mb-16 animate-fade-in-up">
+              <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
+                <BuildingOffice2Icon className="h-4 w-4 sm:h-5 sm:w-5 text-[#F97316]" />
+                <span className="text-xs sm:text-sm font-bold tracking-wider">OUR BRANCHES</span>
               </div>
-              <h2 className="text-4xl font-bold text-[#0F0106] mb-6">
-                Our Premium Rooms
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#0F0106] mb-4 sm:mb-6">
+                Two Locations, One Standard of Excellence
               </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Each suite is meticulously designed to provide the perfect balance of comfort, 
-                functionality, and elegance.
+              <p className="text-gray-600 text-base sm:text-lg max-w-2xl mx-auto px-4">
+                Choose from our two strategically located branches, each offering the same premium 
+                experience with unique local advantages.
               </p>
             </div>
             
-            {/* Rooms Grid */}
-            <div className="grid lg:grid-cols-3 gap-8">
-              {rooms.map((room, index) => (
+            {/* Branches Grid */}
+            <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
+              {branches.map((branch, index) => (
                 <div
                   key={index}
-                  className={`group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 ${
-                    index === activeRoom ? 'transform -translate-y-4' : 'hover:-translate-y-2'
+                  className={`group bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 ${
+                    index === activeBranch ? 'transform -translate-y-2 sm:-translate-y-4' : 'hover:-translate-y-2'
                   } animate-fade-in-up`}
                   style={{ animationDelay: `${index * 200}ms` }}
-                  onMouseEnter={() => setActiveRoom(index)}
+                  onMouseEnter={() => setActiveBranch(index)}
                 >
                   {/* Image */}
-                  <div className="relative h-64 overflow-hidden">
+                  <div className="relative h-48 sm:h-64 overflow-hidden">
                     <img
-                      src={room.image}
-                      alt={room.type}
+                      src={branch.image}
+                      alt={branch.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
-                    {room.featured && (
-                      <div className="absolute top-4 left-4">
-                        {/* "MOST POPULAR" badge removed */}
+                    {branch.featured && (
+                      <div className="absolute top-3 sm:top-4 left-3 sm:left-4">
+                        <span className="px-3 sm:px-4 py-1 sm:py-1.5 bg-[#F97316] text-white text-xs sm:text-sm font-bold rounded-full shadow-lg">
+                          Featured
+                        </span>
                       </div>
                     )}
                   </div>
                   
                   {/* Content */}
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-4">
+                  <div className="p-5 sm:p-6">
+                    <div className="flex justify-between items-start mb-3 sm:mb-4">
                       <div>
-                        <h3 className="text-xl font-bold text-[#0F0106] mb-1">
-                          {room.type}
+                        <h3 className="text-lg sm:text-xl font-bold text-[#0F0106] mb-1">
+                          {branch.name}
                         </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <StarIconSolid className="h-4 w-4 text-yellow-400" />
-                          <span>{room.rating}</span>
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mb-2">
+                          <MapPinIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span>{branch.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500">
+                          <StarIconSolid className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-400" />
+                          <span>{branch.rating}</span>
                           <span>•</span>
-                          <span>{room.reviews} reviews</span>
+                          <span>{branch.reviews} reviews</span>
                         </div>
                       </div>
                     </div>
                     
+                    {/* Quick Info */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-gray-50 rounded-lg p-2 text-center">
+                        <div className="text-xs text-gray-500">Capacity</div>
+                        <div className="font-semibold text-sm text-[#0F0106]">{branch.capacity}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-2 text-center">
+                        <div className="text-xs text-gray-500">Established</div>
+                        <div className="font-semibold text-sm text-[#0F0106]">{branch.established}</div>
+                      </div>
+                    </div>
+                    
                     {/* Features */}
-                    <ul className="space-y-2 mb-6">
-                      {room.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-center gap-2 text-gray-600">
-                          <CheckCircleIcon className="h-4 w-4 text-[#F97316]" />
-                          {feature}
+                    <ul className="space-y-1.5 sm:space-y-2 mb-5 sm:mb-6">
+                      {branch.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-gray-600 text-xs sm:text-sm">
+                          <CheckCircleIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#F97316] flex-shrink-0" />
+                          <span>{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -511,9 +540,9 @@ export default function HomePage() {
                     {/* Inquire button */}
                     <button
                       onClick={scrollToContact}
-                      className="block w-full px-6 py-3 bg-[#0F0106] hover:bg-[#F97316] text-white rounded-btn font-bold transition-all duration-300 text-center group-hover:shadow-lg"
+                      className="block w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-bold transition-all duration-300 text-center group-hover:shadow-lg text-sm sm:text-base"
                     >
-                      Inquire Now
+                      Inquire About {branch.name} Branch
                     </button>
                   </div>
                 </div>
@@ -524,55 +553,55 @@ export default function HomePage() {
       </section>
       
       {/* TESTIMONIALS SECTION */}
-      <section id="testimonials" className="py-24 bg-[#0F0106]">
+      <section id="testimonials" className="py-16 sm:py-24 bg-[#0F0106]">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16 animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F97316]/20 text-white rounded-full mb-6 border border-[#F97316]/30">
-                <StarIcon className="h-5 w-5 text-[#F97316]" />
-                <span className="text-sm font-bold tracking-wider">TESTIMONIALS</span>
+            <div className="text-center mb-12 sm:mb-16 animate-fade-in-up">
+              <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-[#F97316]/20 text-white rounded-full mb-6 border border-[#F97316]/30">
+                <StarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#F97316]" />
+                <span className="text-xs sm:text-sm font-bold tracking-wider">TESTIMONIALS</span>
               </div>
-              <h2 className="text-4xl font-bold text-white mb-6">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 sm:mb-6">
                 What Our Residents Say
               </h2>
             </div>
             
             {/* Testimonials Grid */}
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {testimonials.map((testimonial, index) => (
               <div
                 key={index}
-                className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 hover:border-[#F97316]/30 transition-all duration-500 transform hover:-translate-y-2 animate-fade-in-up"
+                className="bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-white/20 hover:border-[#F97316]/30 transition-all duration-500 transform hover:-translate-y-2 animate-fade-in-up"
                 style={{ animationDelay: `${index * 200}ms` }}
               >
                 {/* Rating */}
-                <div className="flex mb-4">
+                <div className="flex mb-3 sm:mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <StarIconSolid
                       key={i}
-                      className="h-5 w-5 text-yellow-400 fill-current"
+                      className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-current"
                     />
                   ))}
                 </div>
                 
                 {/* Quote */}
-                <div className="relative mb-8">
-                  <div className="text-5xl text-[#F97316]/20 absolute -top-4 -left-2">"</div>
-                  <p className="text-white/90 italic text-lg relative z-10">
+                <div className="relative mb-6 sm:mb-8">
+                  <div className="text-4xl sm:text-5xl text-[#F97316]/20 absolute -top-4 -left-2">"</div>
+                  <p className="text-white/90 italic text-base sm:text-lg relative z-10">
                     {testimonial.text}
                   </p>
                 </div>
                 
-                {/* Author - now using icon instead of image */}
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-[#F97316]/20 border-2 border-[#F97316] flex items-center justify-center">
-                    <UserCircleIcon className="h-8 w-8 text-[#F97316]" />
+                {/* Author */}
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#F97316]/20 border-2 border-[#F97316] flex items-center justify-center">
+                    <UserCircleIcon className="h-6 w-6 sm:h-8 sm:w-8 text-[#F97316]" />
                   </div>
                   <div>
-                    <div className="font-bold text-white">
+                    <div className="font-bold text-white text-sm sm:text-base">
                       {testimonial.name}
                     </div>
-                    <div className="text-white/60 text-sm">
+                    <div className="text-white/60 text-xs sm:text-sm">
                       {testimonial.role}
                     </div>
                   </div>
@@ -585,32 +614,37 @@ export default function HomePage() {
       </section>
       
       {/* CONTACT SECTION */}
-      <section id="contact" className="py-24 bg-white">
+      <section id="contact" className="py-16 sm:py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-16">
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
               {/* Contact Information */}
               <div className="animate-fade-in-up">
-                <div className="mb-12">
-                  <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
-                    <EnvelopeIcon className="h-5 w-5 text-[#F97316]" />
-                    <span className="text-sm font-bold tracking-wider">CONTACT US</span>
+                <div className="mb-8 sm:mb-12">
+                  <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-[#F97316]/10 text-[#0F0106] rounded-full mb-6 border border-[#F97316]/20">
+                    <EnvelopeIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#F97316]" />
+                    <span className="text-xs sm:text-sm font-bold tracking-wider">CONTACT US</span>
                   </div>
-                  <h2 className="text-4xl font-bold text-[#0F0106] mb-6">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-[#0F0106] mb-4 sm:mb-6">
                     Get In Touch
                   </h2>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 text-base sm:text-lg">
                     Our team is ready to assist you with personalized service 
-                    and attention to detail.
+                    and attention to detail for both our branches.
                   </p>
                 </div>
                 
-                <div className="space-y-8">
+                <div className="space-y-6 sm:space-y-8">
                   {[
                     {
                       icon: MapPinIcon,
-                      title: "Visit Our Campus",
-                      details: ["Main G.T Road ", "Mandra, Rawalpindi", "Open 24/7"],
+                      title: "Officers Hostel Mandra Br-1",
+                      details: ["Thandi Sarak near UBL bank Mandra , Rawalpindi", "Open 24/7"],
+                    },
+                    {
+                      icon: MapPinIcon,
+                      title: "Officers Hostel Islamabad Br-2",
+                      details: ["Lane 10, Street 2 , Hostel City Islamabad"],
                     },
                     {
                       icon: PhoneIcon,
@@ -625,18 +659,18 @@ export default function HomePage() {
                   ].map((item, index) => (
                     <div
                       key={index}
-                      className="flex items-start gap-4 p-6 rounded-xl border border-gray-200 hover:border-[#F97316]/50 hover:shadow-md transition-all duration-300"
+                      className="flex items-start gap-3 sm:gap-4 p-4 sm:p-6 rounded-xl border border-gray-200 hover:border-[#F97316]/50 hover:shadow-md transition-all duration-300"
                     >
-                      <div className="p-3 bg-[#F97316]/10 rounded-lg">
-                        <item.icon className="h-6 w-6 text-[#F97316]" />
+                      <div className="p-2 sm:p-3 bg-[#F97316]/10 rounded-lg">
+                        <item.icon className="h-5 w-5 sm:h-6 sm:w-6 text-[#F97316]" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-[#0F0106] mb-2">
+                        <h3 className="text-base sm:text-lg font-bold text-[#0F0106] mb-1 sm:mb-2">
                           {item.title}
                         </h3>
                         <div className="space-y-1">
                           {item.details.map((detail, idx) => (
-                            <p key={idx} className="text-gray-600">
+                            <p key={idx} className="text-gray-600 text-sm sm:text-base">
                               {detail}
                             </p>
                           ))}
@@ -648,28 +682,28 @@ export default function HomePage() {
               </div>
               
               {/* Contact Form */}
-              <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-                <h3 className="text-2xl font-bold text-[#0F0106] mb-2">
+              <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-100 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+                <h3 className="text-xl sm:text-2xl font-bold text-[#0F0106] mb-1 sm:mb-2">
                   Send a Message
                 </h3>
-                <p className="text-gray-600 mb-8">
+                <p className="text-gray-600 text-sm sm:text-base mb-6 sm:mb-8">
                   We'll respond within 24 hours
                 </p>
 
                 {/* Success/Error Messages */}
                 {contactSuccess && (
-                  <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
+                  <div className="mb-6 p-3 sm:p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm sm:text-base">
                     {contactSuccess}
                   </div>
                 )}
                 {contactError && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg">
+                  <div className="mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm sm:text-base">
                     {contactError}
                   </div>
                 )}
                 
-                <form onSubmit={handleContactSubmit} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
+                <form onSubmit={handleContactSubmit} className="space-y-4 sm:space-y-6">
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <input
                         type="text"
@@ -678,7 +712,7 @@ export default function HomePage() {
                         value={contactData.name}
                         onChange={handleContactChange}
                         required
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all text-sm sm:text-base"
                       />
                     </div>
                     <div>
@@ -689,7 +723,7 @@ export default function HomePage() {
                         value={contactData.email}
                         onChange={handleContactChange}
                         required
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all text-sm sm:text-base"
                       />
                     </div>
                   </div>
@@ -702,7 +736,7 @@ export default function HomePage() {
                       value={contactData.subject}
                       onChange={handleContactChange}
                       required
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all text-sm sm:text-base"
                     />
                   </div>
                   
@@ -714,14 +748,14 @@ export default function HomePage() {
                       value={contactData.message}
                       onChange={handleContactChange}
                       required
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all resize-none"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all resize-none text-sm sm:text-base"
                     />
                   </div>
                   
                   <button
                     type="submit"
                     disabled={contactLoading}
-                    className="w-full px-6 py-3 bg-[#0F0106] hover:bg-[#F97316] text-white rounded-btn font-bold transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 sm:px-6 py-3 sm:py-3.5 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-bold transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                   >
                     {contactLoading ? "Sending..." : "Send Message"}
                   </button>

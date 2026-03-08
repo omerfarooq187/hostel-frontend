@@ -14,6 +14,7 @@ import KitchenInventoryPage from "../pages/admin/KitchenInventory";
 import StaffManagementPage from "../pages/admin/Staff";
 import ReportsPage from "../pages/admin/Reports";
 import MessagingPage from "../pages/admin/Messaging";
+import AdmissionRequests from "../pages/admin/AdmissionRequests";
 
 // Helper: Restrict page by role – redirects to dashboard if not allowed
 const RoleGuard = ({ children, allowedRoles }) => {
@@ -105,7 +106,14 @@ const AdminRouteWrapper = () => {
             </RoleGuard>
           } 
         />
-
+        <Route
+          path="admission-requests"
+          element={
+            <RoleGuard allowedRoles={['ADMIN', 'STAFF']}>
+              <AdmissionRequests />
+            </RoleGuard>
+          }
+        />
 
         {/* 🔐 ADMIN‑ONLY PAGES – staff will be redirected */}
 

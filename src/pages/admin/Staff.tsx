@@ -132,18 +132,25 @@ export default function StaffManagementPage() {
   };
 
   // 5. Remove staff
-  const handleRemoveStaff = async (staffId) => {
-    if (!window.confirm("Are you sure you want to remove this staff member?"))
-      return;
-    try {
-      await api.delete(`/api/admin/staff/${staffId}`);
-      showAlert("success", "Staff removed successfully");
-      loadStaff();
-      loadEligibleUsers();
-    } catch (err) {
-      showAlert("error", "Failed to remove staff");
+// 5. Remove staff with cascade delete
+const handleRemoveStaff = async (staffId, staffName) => {
+  if (!window.confirm(`Are you sure you want to remove ${staffName}?\n\nThis will also delete ALL salary records for this staff member.`)) {
+    return;
+  }
+  
+  try {
+    const response = await api.delete(`/api/admin/staff/${staffId}`);
+    
+    if (response.data.success) {
+      showAlert("success", response.data.message || "Staff removed successfully");
+      loadStaff(); // Refresh the list
+      loadEligibleUsers(); // Refresh eligible users
     }
-  };
+  } catch (err) {
+    console.error("Failed to remove staff", err);
+    showAlert("error", err.response?.data?.message || "Failed to remove staff");
+  }
+};
 
   // 6. Add salary
   const handleAddSalary = async (e) => {
@@ -630,12 +637,12 @@ const StaffRow = ({
             )}
           </button>
           <button
-            onClick={onRemove}
-            className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition"
-            title="Remove Staff"
-          >
-            <TrashIcon className="h-5 w-5" />
-          </button>
+          onClick={() => onRemove(staff.id, staff.user?.name)}
+          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition"
+          title="Remove Staff (deletes all salary records)"
+        >
+          <TrashIcon className="h-5 w-5" />
+        </button>
         </div>
       </div>
 

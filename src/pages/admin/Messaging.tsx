@@ -22,6 +22,12 @@ export default function MessagingPage() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
+  // Stats for messaging
+  const [stats, setStats] = useState({
+    activeStudents: 0,
+    totalStudents: 0
+  });
+
   // Message fields
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -37,20 +43,45 @@ export default function MessagingPage() {
     }
   }, [recipientType]);
 
+  // Load stats for messaging
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      // You need to implement this endpoint or use existing ones
+      const [activeRes, allRes] = await Promise.all([
+        api.get("/api/admin/students", { params: { hostelId } }),
+        api.get("/api/admin/students/all-including-inactive", { params: { hostelId } })
+      ]);
+      
+      setStats({
+        activeStudents: activeRes.data.length,
+        totalStudents: allRes.data.length
+      });
+    } catch (err) {
+      console.error("Failed to load stats", err);
+    }
+  };
+
   const loadUsers = async () => {
     setLoadingUsers(true);
     try {
-      // You need to implement this endpoint on the backend
-      // It should return a list of all users (id, name, email)
+      // Get all students with user accounts
       const res = await api.get("/api/admin/students/without-user", {
         params: { hostelId },
       });
-      console.log(res.data)
+      
       // Transform for react-select
-      const options = res.data.map((student) => ({
-        value: student.user.id,
-        label: `${student.user.name} (${student.user.email})`,
-      }));
+      const options = res.data
+        .filter(student => student.user) // Ensure user exists
+        .map((student) => ({
+          value: student.user.id,
+          label: `${student.user.name} (${student.user.email})`,
+          email: student.user.email
+        }));
+      
       setUsers(options);
     } catch (err) {
       console.error("Failed to load users", err);
@@ -95,16 +126,18 @@ export default function MessagingPage() {
         payload.allStudents = true;
       }
 
-      const res = await api.post("/api/admin/messaging/send", payload);
-
-      showAlert("success", "Message sent successfully!");
+      const res = await api.post(`/api/admin/messaging/send?hostelId=${hostelId}`, payload);
+      
+      showAlert("success", res.data || "Message sent successfully!");
+      
       // Clear form except recipient type
       setSubject("");
       setBody("");
       setSelectedUser(null);
     } catch (err) {
       console.error("Failed to send message", err);
-      showAlert("error", err.response?.data?.message || "Failed to send message");
+      const errorMsg = err.response?.data || err.response?.data?.message || "Failed to send message";
+      showAlert("error", errorMsg);
     } finally {
       setSending(false);
     }
@@ -115,7 +148,7 @@ export default function MessagingPage() {
       {/* Alert */}
       {alert.show && (
         <div
-          className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-xl shadow-lg ${
+          className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-xl shadow-lg animate-slide-in ${
             alert.type === "success"
               ? "bg-green-100 border border-green-400 text-green-800"
               : "bg-red-100 border border-red-400 text-red-800"
@@ -143,6 +176,33 @@ export default function MessagingPage() {
             <p className="text-purple-100 mt-1">
               Send emails to individuals or groups
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-800">Active Students</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.activeStudents}</p>
+            </div>
+            <div className="p-2 bg-green-100 rounded-lg">
+              <UserGroupIcon className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-800">Total Students</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalStudents}</p>
+            </div>
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <UsersIcon className="h-6 w-6 text-purple-600" />
+            </div>
           </div>
         </div>
       </div>
@@ -177,7 +237,7 @@ export default function MessagingPage() {
             {recipientType === "individual" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select User *
+                  Select Student *
                 </label>
                 <Select
                   options={users}
@@ -189,28 +249,45 @@ export default function MessagingPage() {
                   classNamePrefix="react-select"
                   isClearable
                   required
+                  noOptionsMessage={() => "No students with accounts found"}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Note: User list includes staff and students.
+                  Only students with user accounts can receive emails.
                 </p>
               </div>
             )}
 
             {recipientType === "active" && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-blue-800">
-                  <UserGroupIcon className="h-5 w-5 inline mr-2" />
-                  This message will be sent to all <strong>active students</strong>.
-                </p>
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <UserGroupIcon className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="text-green-800 font-medium">
+                      Sending to Active Students
+                    </p>
+                    <p className="text-green-700 text-sm mt-1">
+                      This message will be sent to <strong>{stats.activeStudents} active students</strong> who have user accounts.
+                      Inactive students will not receive this message.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
             {recipientType === "all" && (
               <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
-                <p className="text-purple-800">
-                  <UsersIcon className="h-5 w-5 inline mr-2" />
-                  This message will be sent to <strong>all students</strong> (active and inactive).
-                </p>
+                <div className="flex items-start gap-3">
+                  <UsersIcon className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <div>
+                    <p className="text-purple-800 font-medium">
+                      Sending to All Students
+                    </p>
+                    <p className="text-purple-700 text-sm mt-1">
+                      This message will be sent to <strong>{stats.totalStudents} students</strong> (both active and inactive) 
+                      who have user accounts. Students without accounts will not receive emails.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -251,7 +328,7 @@ export default function MessagingPage() {
               <button
                 type="submit"
                 disabled={sending}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {sending ? (
                   <>

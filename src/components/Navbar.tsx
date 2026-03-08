@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/ogoh_logo.png";
 import {
@@ -18,6 +18,7 @@ export default function Navbar() {
   const { token, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState("home");
   const location = useLocation();
 
   // Close mobile menu on route change
@@ -29,38 +30,91 @@ export default function Navbar() {
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
+      
+      // Detect which section is currently in view (only on home page)
+      if (location.pathname === "/") {
+        const sections = [
+          { id: "home", offset: 0 },
+          { id: "about", offset: 100 },
+          { id: "branches", offset: 100 },
+          { id: "contact", offset: 100 }
+        ];
+        
+        const scrollPosition = window.scrollY + 150; // Offset for navbar
+        
+        // Check if we're at the very top (home section)
+        if (scrollPosition < 200) {
+          setActiveSection("home");
+          return;
+        }
+        
+        // Check other sections
+        for (const section of sections.slice(1)) { // Skip home
+          const element = document.getElementById(section.id);
+          if (element) {
+            const { offsetTop, offsetHeight } = element;
+            if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+              setActiveSection(section.id);
+              break;
+            }
+          }
+        }
+      }
     };
+    
     window.addEventListener("scroll", handleScroll);
+    // Initial check
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [location.pathname]);
 
   // Force solid background on authentication-related pages
   const isAuthPage =
     location.pathname === "/login" ||
     location.pathname === "/register" ||
     location.pathname.startsWith("/profile") ||
-    location.pathname.startsWith("/dashboard");
+    location.pathname.startsWith("/dashboard") ||
+    location.pathname.startsWith("/verify-email") ||
+    location.pathname.startsWith("/forgot-password") ||
+    location.pathname.startsWith("/reset-password");
 
   const navLinks = [
-    { name: "Home", href: "/", icon: HomeIcon },
-    { name: "About", href: "/#about", icon: InformationCircleIcon },
-    { name: "Rooms", href: "/#rooms", icon: StarIcon },
-    { name: "Contact", href: "/#contact", icon: EnvelopeIcon },
+    { name: "Home", path: "/", icon: HomeIcon, section: "home", exact: true },
+    { name: "About", path: "/", icon: InformationCircleIcon, section: "about", hash: true },
+    { name: "Branches", path: "/", icon: StarIcon, section: "branches", hash: true },
+    { name: "Contact", path: "/", icon: EnvelopeIcon, section: "contact", hash: true },
   ];
 
-  const handleSmoothScroll = (e, href) => {
+  const handleHashScroll = (e, section) => {
     e.preventDefault();
     setIsOpen(false);
-    if (href.startsWith("/#")) {
-      const id = href.substring(2);
-      const element = document.getElementById(id);
+    
+    if (location.pathname !== "/") {
+      // If not on home page, navigate to home first
+      window.location.href = `/#${section}`;
+    } else {
+      // On home page - smooth scroll
+      const element = document.getElementById(section);
       if (element) {
         element.scrollIntoView({ behavior: "smooth" });
-      } else {
-        window.location.href = href;
+        setActiveSection(section);
       }
+    }
+  };
+
+  const isLinkActive = (link) => {
+    // If not on home page, only Home can be active if path matches
+    if (location.pathname !== "/") {
+      return link.path === location.pathname;
+    }
+    
+    // On home page
+    if (link.section === "home") {
+      // Home is only active when no other section is active AND we're at the top
+      return activeSection === "home" && window.scrollY < 100;
     } else {
-      window.location.href = href;
+      // Other sections are active when they're in view
+      return activeSection === link.section;
     }
   };
 
@@ -76,82 +130,127 @@ export default function Navbar() {
           <Link
             to="/"
             className="flex items-center gap-2 sm:gap-3"
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              setIsOpen(false);
+              setActiveSection("home");
+              if (location.pathname === "/") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
           >
-            {/* Responsive logo size */}
             <img 
               src={logo} 
               alt="OGOH Logo" 
-              className="h-8 w-auto sm:h-10 md:h-12"
+              className="h-10 w-auto sm:h-12 md:h-14"
             />
-            {/* Responsive text size - full orange color */}
-            <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold whitespace-nowrap text-[#F97316]">
+            <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold whitespace-nowrap text-[#FF6B00]">
               Officers Group of Hostels
             </span>
           </Link>
 
-          {/* Desktop Menu - hidden on mobile */}
+          {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                onClick={(e) => handleSmoothScroll(e, link.href)}
-                className={`relative font-medium transition-colors group text-sm lg:text-base ${
-                  scrolled || isAuthPage
-                    ? "text-gray-700"
-                    : "text-white/90"
-                }`}
-              >
-                {link.name}
-                {/* Orange underline on hover */}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#F97316] transition-all duration-300 group-hover:w-full"></span>
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              if (link.hash) {
+                return (
+                  <a
+                    key={link.name}
+                    href={`/#${link.section}`}
+                    onClick={(e) => handleHashScroll(e, link.section)}
+                    className={`relative font-medium transition-colors group text-sm lg:text-base cursor-pointer ${
+                      scrolled || isAuthPage
+                        ? isLinkActive(link)
+                          ? "text-[#FF6B00]"
+                          : "text-gray-700 hover:text-[#FF6B00]"
+                        : isLinkActive(link)
+                          ? "text-[#FF6B00]"
+                          : "text-white/90 hover:text-[#FF6B00]"
+                    }`}
+                  >
+                    {link.name}
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FF6B00] transition-all duration-300 group-hover:w-full"></span>
+                  </a>
+                );
+              } else {
+                return (
+                  <NavLink
+                    key={link.name}
+                    to={link.path}
+                    end={link.exact}
+                    className={({ isActive: isRouteActive }) => 
+                      `relative font-medium transition-colors group text-sm lg:text-base ${
+                        scrolled || isAuthPage
+                          ? (isRouteActive && isLinkActive(link))
+                            ? "text-[#FF6B00]"
+                            : "text-gray-700 hover:text-[#FF6B00]"
+                          : (isRouteActive && isLinkActive(link))
+                            ? "text-[#FF6B00]"
+                            : "text-white/90 hover:text-[#FF6B00]"
+                      }`
+                    }
+                    onClick={() => {
+                      setIsOpen(false);
+                      setActiveSection("home");
+                      if (location.pathname === "/") {
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }
+                    }}
+                  >
+                    {link.name}
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FF6B00] transition-all duration-300 group-hover:w-full"></span>
+                  </NavLink>
+                );
+              }
+            })}
+            
             {!token ? (
               <>
-                <Link
+                <NavLink
                   to="/login"
-                  className={`relative font-medium transition-colors group text-sm lg:text-base ${
-                    scrolled || isAuthPage
-                      ? "text-gray-700"
-                      : "text-white/90"
-                  }`}
+                  className={({ isActive }) => 
+                    `relative font-medium transition-colors group text-sm lg:text-base ${
+                      scrolled || isAuthPage
+                        ? isActive ? "text-[#FF6B00]" : "text-gray-700 hover:text-[#FF6B00]"
+                        : isActive ? "text-[#FF6B00]" : "text-white/90 hover:text-[#FF6B00]"
+                    }`
+                  }
                 >
                   Login
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#F97316] transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-                <Link
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FF6B00] transition-all duration-300 group-hover:w-full"></span>
+                </NavLink>
+                <NavLink
                   to="/register"
-                  className="px-4 py-2 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-medium transition-colors shadow-md text-sm lg:text-base"
+                  className="px-4 py-2 bg-[#FF6B00] hover:bg-[#EA580C] text-white rounded-lg font-medium transition-colors shadow-md text-sm lg:text-base"
                 >
                   Register
-                </Link>
+                </NavLink>
               </>
             ) : (
               <div className="flex items-center space-x-4">
-                <Link
+                <NavLink
                   to="/profile"
-                  className={`relative font-medium transition-colors group text-sm lg:text-base ${
-                    scrolled || isAuthPage
-                      ? "text-gray-700"
-                      : "text-white/90"
-                  }`}
+                  className={({ isActive }) => 
+                    `relative font-medium transition-colors group text-sm lg:text-base ${
+                      scrolled || isAuthPage
+                        ? isActive ? "text-[#FF6B00]" : "text-gray-700 hover:text-[#FF6B00]"
+                        : isActive ? "text-[#FF6B00]" : "text-white/90 hover:text-[#FF6B00]"
+                    }`
+                  }
                 >
                   Profile
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#F97316] transition-all duration-300 group-hover:w-full"></span>
-                </Link>
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FF6B00] transition-all duration-300 group-hover:w-full"></span>
+                </NavLink>
                 <button
                   onClick={logout}
                   className={`relative flex items-center gap-1 transition-colors group text-sm lg:text-base ${
                     scrolled || isAuthPage
-                      ? "text-gray-700"
-                      : "text-white/90"
+                      ? "text-gray-700 hover:text-[#FF6B00]"
+                      : "text-white/90 hover:text-[#FF6B00]"
                   }`}
                 >
                   <ArrowRightOnRectangleIcon className="h-4 w-4 lg:h-5 lg:w-5" />
                   <span>Logout</span>
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#F97316] transition-all duration-300 group-hover:w-full"></span>
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FF6B00] transition-all duration-300 group-hover:w-full"></span>
                 </button>
               </div>
             )}
@@ -195,60 +294,116 @@ export default function Navbar() {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto py-4">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                onClick={(e) => handleSmoothScroll(e, link.href)}
-                className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors relative group text-sm sm:text-base"
-              >
-                <link.icon className="h-5 w-5 sm:h-5 sm:w-5" />
-                {link.name}
-                <span className="absolute left-0 w-1 h-0 bg-[#F97316] transition-all duration-300 group-hover:h-full"></span>
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              if (link.hash) {
+                return (
+                  <a
+                    key={link.name}
+                    href={`/#${link.section}`}
+                    onClick={(e) => {
+                      handleHashScroll(e, link.section);
+                      setIsOpen(false);
+                    }}
+                    className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 transition-colors relative group text-sm sm:text-base cursor-pointer ${
+                      isLinkActive(link)
+                        ? "text-[#FF6B00] bg-orange-50"
+                        : "text-gray-700 hover:bg-orange-50 hover:text-[#FF6B00]"
+                    }`}
+                  >
+                    <link.icon className="h-5 w-5 sm:h-5 sm:w-5" />
+                    {link.name}
+                    <span className="absolute left-0 w-1 h-0 bg-[#FF6B00] transition-all duration-300 group-hover:h-full"></span>
+                  </a>
+                );
+              } else {
+                return (
+                  <NavLink
+                    key={link.name}
+                    to={link.path}
+                    end={link.exact}
+                    onClick={() => {
+                      setIsOpen(false);
+                      setActiveSection("home");
+                      if (location.pathname === "/") {
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }
+                    }}
+                    className={({ isActive: isRouteActive }) => 
+                      `flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 transition-colors relative group text-sm sm:text-base ${
+                        (isRouteActive && isLinkActive(link))
+                          ? "text-[#FF6B00] bg-orange-50"
+                          : "text-gray-700 hover:bg-orange-50 hover:text-[#FF6B00]"
+                      }`
+                    }
+                  >
+                    <link.icon className="h-5 w-5 sm:h-5 sm:w-5" />
+                    {link.name}
+                    <span className="absolute left-0 w-1 h-0 bg-[#FF6B00] transition-all duration-300 group-hover:h-full"></span>
+                  </NavLink>
+                );
+              }
+            })}
+            
             {!token ? (
               <>
-                <Link
+                <NavLink
                   to="/login"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors relative group text-sm sm:text-base"
+                  className={({ isActive }) => 
+                    `flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 transition-colors relative group text-sm sm:text-base ${
+                      isActive 
+                        ? "text-[#FF6B00] bg-orange-50" 
+                        : "text-gray-700 hover:bg-orange-50 hover:text-[#FF6B00]"
+                    }`
+                  }
                 >
                   <ArrowRightOnRectangleIcon className="h-5 w-5 sm:h-5 sm:w-5" />
                   Login
-                  <span className="absolute left-0 w-1 h-0 bg-[#F97316] transition-all duration-300 group-hover:h-full"></span>
-                </Link>
-                <Link
+                  <span className="absolute left-0 w-1 h-0 bg-[#FF6B00] transition-all duration-300 group-hover:h-full"></span>
+                </NavLink>
+                <NavLink
                   to="/register"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors relative group text-sm sm:text-base"
+                  className={({ isActive }) => 
+                    `flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 transition-colors relative group text-sm sm:text-base ${
+                      isActive 
+                        ? "text-[#FF6B00] bg-orange-50" 
+                        : "text-gray-700 hover:bg-orange-50 hover:text-[#FF6B00]"
+                    }`
+                  }
                 >
                   <UserPlusIcon className="h-5 w-5 sm:h-5 sm:w-5" />
                   Register
-                  <span className="absolute left-0 w-1 h-0 bg-[#F97316] transition-all duration-300 group-hover:h-full"></span>
-                </Link>
+                  <span className="absolute left-0 w-1 h-0 bg-[#FF6B00] transition-all duration-300 group-hover:h-full"></span>
+                </NavLink>
               </>
             ) : (
               <>
-                <Link
+                <NavLink
                   to="/profile"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors relative group text-sm sm:text-base"
+                  className={({ isActive }) => 
+                    `flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 transition-colors relative group text-sm sm:text-base ${
+                      isActive 
+                        ? "text-[#FF6B00] bg-orange-50" 
+                        : "text-gray-700 hover:bg-orange-50 hover:text-[#FF6B00]"
+                    }`
+                  }
                 >
                   <UserIcon className="h-5 w-5 sm:h-5 sm:w-5" />
                   Profile
-                  <span className="absolute left-0 w-1 h-0 bg-[#F97316] transition-all duration-300 group-hover:h-full"></span>
-                </Link>
+                  <span className="absolute left-0 w-1 h-0 bg-[#FF6B00] transition-all duration-300 group-hover:h-full"></span>
+                </NavLink>
                 <button
                   onClick={() => {
                     logout();
                     setIsOpen(false);
                   }}
-                  className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors w-full text-left relative group text-sm sm:text-base"
+                  className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 text-gray-700 hover:bg-orange-50 hover:text-[#FF6B00] transition-colors w-full text-left relative group text-sm sm:text-base"
                 >
                   <ArrowRightOnRectangleIcon className="h-5 w-5 sm:h-5 sm:w-5" />
                   Logout
-                  <span className="absolute left-0 w-1 h-0 bg-[#F97316] transition-all duration-300 group-hover:h-full"></span>
+                  <span className="absolute left-0 w-1 h-0 bg-[#FF6B00] transition-all duration-300 group-hover:h-full"></span>
                 </button>
               </>
             )}

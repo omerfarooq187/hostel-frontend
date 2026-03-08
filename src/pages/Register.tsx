@@ -12,6 +12,7 @@ import {
   EnvelopeOpenIcon,
   ExclamationCircleIcon,
   ArrowPathIcon,
+  IdentificationIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Register() {
@@ -25,6 +26,18 @@ export default function Register() {
   const [success, setSuccess] = useState("");
   const [verificationSent, setVerificationSent] = useState(false);
   const [resending, setResending] = useState(false);
+
+  // CNIC validation - only numbers, max 13 digits
+  const handleCnicChange = (e) => {
+    const value = e.target.value;
+    // Allow only digits
+    if (value === "" || /^\d+$/.test(value)) {
+      // Limit to 13 digits
+      if (value.length <= 13) {
+        setCnic(value);
+      }
+    }
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -42,6 +55,13 @@ export default function Register() {
 
     if (password.length < 6) {
       setError("Password must be at least 6 characters long");
+      setLoading(false);
+      return;
+    }
+
+    // CNIC validation
+    if (cnic.length !== 13) {
+      setError("CNIC must be exactly 13 digits");
       setLoading(false);
       return;
     }
@@ -96,11 +116,11 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-gray-100 p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-orange-600 to-orange-700 rounded-2xl mb-4">
             <BuildingOfficeIcon className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Join Officers Group of Hostels</h1>
@@ -197,7 +217,7 @@ export default function Register() {
                       placeholder="John Doe"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                       required
                       disabled={loading}
                     />
@@ -218,31 +238,41 @@ export default function Register() {
                       placeholder="john@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                       required
                       disabled={loading}
                     />
                   </div>
                 </div>
 
-                {/* Cnic Field */}
+                {/* CNIC Field - Updated with validation */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    CNIC
+                    CNIC (13 digits)
                   </label>
                   <div className="relative">
                     <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                      <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                      <IdentificationIcon className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
-                      type="Text"
+                      type="text"
+                      inputMode="numeric"
                       placeholder="0000000000000"
                       value={cnic}
-                      onChange={(e) => setCnic(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      onChange={handleCnicChange}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                       required
                       disabled={loading}
+                      maxLength={13}
                     />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <p className="text-xs text-gray-500">
+                      Enter 13 digits without dashes
+                    </p>
+                    <p className={`text-xs ${cnic.length === 13 ? 'text-green-600' : 'text-orange-600'}`}>
+                      {cnic.length}/13 digits
+                    </p>
                   </div>
                 </div>
 
@@ -260,7 +290,7 @@ export default function Register() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                       required
                       minLength="6"
                       disabled={loading}
@@ -285,7 +315,7 @@ export default function Register() {
                       placeholder="••••••••"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                       required
                       minLength="6"
                       disabled={loading}
@@ -294,20 +324,20 @@ export default function Register() {
                 </div>
 
                 {/* Terms Note */}
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-gray-700 mb-1">Important Notes:</p>
                     <ul className="space-y-2 text-xs text-gray-600">
                       <li className="flex items-start gap-2">
-                        <CheckCircleIcon className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircleIcon className="h-3 w-3 text-orange-500 mt-0.5 flex-shrink-0" />
                         <span>You'll receive a verification email immediately</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <CheckCircleIcon className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircleIcon className="h-3 w-3 text-orange-500 mt-0.5 flex-shrink-0" />
                         <span>Verification link expires in 24 hours</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <CheckCircleIcon className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircleIcon className="h-3 w-3 text-orange-500 mt-0.5 flex-shrink-0" />
                         <span>Account requires admin approval after email verification</span>
                       </li>
                     </ul>
@@ -318,7 +348,7 @@ export default function Register() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-semibold transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-lg font-semibold transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -341,26 +371,11 @@ export default function Register() {
                 Already have an account?{" "}
                 <Link
                   to="/login"
-                  className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                  className="text-orange-600 hover:text-orange-800 font-medium transition-colors"
                 >
                   Sign In
                 </Link>
               </p>
-            </div>
-          </div>
-
-          {/* Registration Info */}
-          <div className="bg-blue-50 px-8 py-4 border-t border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 bg-blue-100 rounded-lg">
-                <BuildingOfficeIcon className="h-4 w-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-700 font-medium mb-1">Verification Required</p>
-                <p className="text-xs text-gray-600">
-                  Check your email for verification link after registration. You must verify your email before proceeding.
-                </p>
-              </div>
             </div>
           </div>
         </div>

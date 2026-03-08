@@ -1,4 +1,4 @@
-import { useEffect, useState, memo } from "react";
+import { useEffect, useState, memo, useMemo } from "react";
 import api from "../../api/axios";
 import {
   UserGroupIcon,
@@ -15,8 +15,17 @@ import {
   CheckCircleIcon,
   CurrencyRupeeIcon,
   UserPlusIcon,
-  IdentificationIcon
+  IdentificationIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ArchiveBoxIcon,
+  ArchiveBoxXMarkIcon,
+  InboxIcon,
 } from "@heroicons/react/24/outline";
+import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);
@@ -26,6 +35,17 @@ export default function StudentsPage() {
   const [showManualModal, setShowManualModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [manualActionLoading, setManualActionLoading] = useState(false);
+
+  // role
+  const {role} = useAuth();
+
+  // Filter and search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("active"); // "active", "inactive", "all"
+  const [filterType, setFilterType] = useState("all"); // "all", "with-account", "manual"
+  const [sortField, setSortField] = useState("name");
+  const [sortDirection, setSortDirection] = useState("asc");
+  const [showFilters, setShowFilters] = useState(false);
 
   // Existing user form state
   const [cnic, setCnic] = useState("");
@@ -70,8 +90,8 @@ export default function StudentsPage() {
   // Helper function to validate CNIC format
   const validateCNIC = (cnic) => {
     if (!cnic) return false;
-    // Pakistani CNIC format: 12345-1234567-1 or 1234512345671
-    const cnicRegex = /^\d{5}-\d{7}-\d{1}$|^\d{13}$/;
+    // Pakistani CNIC format: 13 digits only
+    const cnicRegex = /^\d{13}$/;
     return cnicRegex.test(cnic);
   };
 
@@ -99,12 +119,33 @@ export default function StudentsPage() {
     setSuccessDialog(prev => ({ ...prev, show: false }));
   };
 
+  // Add state for pending requests count
+const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+// Fetch pending requests count
+const fetchPendingRequestsCount = async () => {
+  try {
+    const response = await api.get("/api/admin/admission-requests/pending");
+    if (response.data.success) {
+      setPendingRequestsCount(response.data.count || 0);
+    }
+  } catch (err) {
+    console.error("Failed to fetch pending requests count:", err);
+  }
+};
+
+// Call it in useEffect
+useEffect(() => {
+  fetchPendingRequestsCount();
+}, []);
+
   const fetchData = async () => {
     setLoading(true);
     const hostelId = localStorage.getItem("selectedHostelId")
     try {
+      // Fetch all students including inactive
       const [studentsRes, usersRes, activeAllocationsRes] = await Promise.all([
-        api.get("/api/admin/students",
+        api.get("/api/admin/students/all-including-inactive",
           {params: {hostelId}}
         ),
         api.get("/api/admin/users"),
@@ -144,15 +185,19 @@ export default function StudentsPage() {
 
   const fetchStudentAllocation = async (studentId) => {
     const hostelId = localStorage.getItem("selectedHostelId");
-    const res = await api.get(
-      `/api/admin/allocations/student/${studentId}`,
-      { params: { hostelId } }
-    );
+    try {
+      const res = await api.get(
+        `/api/admin/allocations/student/${studentId}`,
+        { params: { hostelId } }
+      );
 
-    setAllocationsMap(prev => ({
-      ...prev,
-      [studentId]: res.data
-    }));
+      setAllocationsMap(prev => ({
+        ...prev,
+        [studentId]: res.data
+      }));
+    } catch (err) {
+      console.error("Failed to fetch allocation for student", studentId, err);
+    }
   };
 
   useEffect(() => {
@@ -167,6 +212,92 @@ export default function StudentsPage() {
       });
     }
   }, [students]);
+
+  // Filter and sort students
+  const filteredAndSortedStudents = useMemo(() => {
+    let filtered = [...students];
+
+    // Apply status filter
+    if (filterStatus === "active") {
+      filtered = filtered.filter(s => s.active === true);
+    } else if (filterStatus === "inactive") {
+      filtered = filtered.filter(s => s.active === false);
+    }
+
+    // Apply type filter
+    if (filterType === "with-account") {
+      filtered = filtered.filter(s => s.user !== null);
+    } else if (filterType === "manual") {
+      filtered = filtered.filter(s => s.user === null);
+    }
+
+    // Apply search
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(s => 
+        (s.user?.name?.toLowerCase() || s.name?.toLowerCase()).includes(term) ||
+        s.cnic?.toLowerCase().includes(term) ||
+        s.phone?.toLowerCase().includes(term) ||
+        s.user?.email?.toLowerCase().includes(term)
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortField) {
+        case "name":
+          aValue = a.user?.name || a.name || "";
+          bValue = b.user?.name || b.name || "";
+          break;
+        case "cnic":
+          aValue = a.cnic || "";
+          bValue = b.cnic || "";
+          break;
+        case "type":
+          aValue = a.user ? "with-account" : "manual";
+          bValue = b.user ? "with-account" : "manual";
+          break;
+        case "status":
+          aValue = a.active ? "active" : "inactive";
+          bValue = b.active ? "active" : "inactive";
+          break;
+        case "collection":
+          aValue = totalCollections[a.id] || 0;
+          bValue = totalCollections[b.id] || 0;
+          break;
+        default:
+          aValue = a.id;
+          bValue = b.id;
+      }
+
+      if (typeof aValue === "string") {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      if (sortDirection === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    return filtered;
+  }, [students, searchTerm, filterStatus, filterType, sortField, sortDirection, totalCollections]);
+
+  // Statistics
+  const stats = useMemo(() => {
+    const total = students.length;
+    const active = students.filter(s => s.active === true).length;
+    const inactive = students.filter(s => s.active === false).length;
+    const withAccount = students.filter(s => s.user !== null).length;
+    const manual = students.filter(s => s.user === null).length;
+    const allocated = Object.values(allocationsMap).filter(a => a?.active === true).length;
+
+    return { total, active, inactive, withAccount, manual, allocated };
+  }, [students, allocationsMap]);
 
   const openAddModal = () => {
     setEditingStudentId(null);
@@ -197,10 +328,15 @@ export default function StudentsPage() {
     
     // Check if student has a user or is a manual admission
     if (student.user) {
-      setSelectedUser(student.user);
+      setSelectedUser({
+        id: student.user.id,
+        name: student.user.name,
+        email: student.user.email,
+        cnic: student.user.cnic
+      });
       setUserSearch(`${student.user.name} (${student.user.email})`);
     } else {
-      // For manually admitted students, show name directly but don't allow user changes
+      // For manually admitted students
       setSelectedUser({ 
         id: null, 
         name: student.name, 
@@ -215,13 +351,14 @@ export default function StudentsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate CNIC for all students
     if (!cnic) {
       showError("Validation Error", "CNIC is required");
       return;
     }
 
     if (!validateCNIC(cnic)) {
-      showError("Validation Error", "Please enter a valid CNIC format (12345-1234567-1 or 13 digits)");
+      showError("Validation Error", "Please enter a valid 13-digit CNIC (without dashes)");
       return;
     }
 
@@ -235,7 +372,7 @@ export default function StudentsPage() {
     try {
       let res;
       if (editingStudentId) {
-        // Update existing student
+        // Update existing student - always include CNIC
         res = await api.put(`/api/admin/students/${editingStudentId}`, {
           cnic,
           phone,
@@ -249,7 +386,7 @@ export default function StudentsPage() {
           "Student information has been successfully updated."
         );
       } else {
-        // Add student with existing user
+        // Add student with existing user - include CNIC (can override user's CNIC if needed)
         res = await api.post(`/api/admin/students/${selectedUser.id}`, {
           cnic,
           phone,
@@ -288,7 +425,7 @@ export default function StudentsPage() {
     }
 
     if (!validateCNIC(manualCnic)) {
-      showError("Validation Error", "Please enter a valid CNIC format (12345-1234567-1 or 13 digits)");
+      showError("Validation Error", "Please enter a valid 13-digit CNIC (without dashes)");
       return;
     }
 
@@ -330,60 +467,147 @@ export default function StudentsPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this student?")) return;
+  const handleDeactivate = async (id) => {
+    if (!window.confirm("Are you sure you want to deactivate this student? They will no longer be active in the system.")) return;
 
     try {
-      await api.delete(`/api/admin/students/${id}`);
-      setStudents(students.filter((s) => s.id !== id));
-      showSuccess(
-        "Student Deleted",
-        "Student has been successfully removed from the system."
-      );
+      const response = await api.delete(`/api/admin/students/${id}/deactivate`);
+      
+      if (response.data.success) {
+        fetchData();
+        showSuccess(
+          "Student Deactivated",
+          response.data.message || "Student has been successfully deactivated."
+        );
+      }
     } catch (err) {
-      console.error("Failed to delete student", err);
+      console.error("Failed to deactivate student", err);
+      if (err.response?.status === 409) {
+        showError("Cannot Deactivate Student", err.response.data.message);
+      } else {
+        showError(
+          "Deactivation Failed",
+          err.response?.data?.message || "Unable to deactivate student. Please try again."
+        );
+      }
+    }
+  };
+
+  const handleHardDelete = async (id, studentName) => {
+  // Stronger warning since this deletes everything including active allocations
+  if (!window.confirm(`⚠️ PERMANENT DELETE: Are you sure you want to permanently delete ${studentName}?\n\nThis will delete:\n- All fee records (paid and unpaid)\n- All allocation history (even active allocations)\n- The student profile itself\n\nThis action CANNOT be undone!`)) {
+    return;
+  }
+
+  try {
+    const response = await api.delete(`/api/admin/students/${id}/hard`);
+    
+    if (response.data.success) {
+      fetchData(); // Refresh the list
+      showSuccess(
+        "Student Permanently Deleted",
+        response.data.message || "Student and all related data has been permanently deleted."
+      );
+    }
+  } catch (err) {
+    console.error("Failed to hard delete student", err);
+    showError(
+      "Delete Failed",
+      err.response?.data?.message || "Unable to delete student. Please try again."
+    );
+  }
+};
+
+  const handleReactivate = async (id) => {
+    if (!window.confirm("Are you sure you want to reactivate this student?")) return;
+
+    try {
+      const response = await api.put(`/api/admin/students/${id}/reactivate`);
+      
+      if (response.data.success) {
+        fetchData();
+        showSuccess("Student Reactivated", response.data.message);
+      }
+    } catch (err) {
+      console.error("Failed to reactivate student", err);
       showError(
-        "Delete Failed",
-        err.response?.data?.message || "Unable to delete student. Please try again."
+        "Reactivate Failed",
+        err.response?.data?.message || "Unable to reactivate student. Please try again."
       );
     }
   };
 
+  const toggleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return null;
+    return sortDirection === "asc" 
+      ? <ArrowUpIcon className="h-3 w-3 ml-1 inline" />
+      : <ArrowDownIcon className="h-3 w-3 ml-1 inline" />;
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setFilterStatus("active");
+    setFilterType("all");
+    setSortField("name");
+    setSortDirection("asc");
+  };
+
   if (loading) return <StudentsSkeleton />;
 
-  return (
+ return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Students Management</h1>
-          <p className="text-gray-600 mt-1">Manage all student profiles and information</p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={openAddModal}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
-          >
-            <PlusIcon className="h-5 w-5" />
-            Add Student with Account
-          </button>
-          <button
-            onClick={openManualModal}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
-          >
-            <UserPlusIcon className="h-5 w-5" />
-            Admit Student Manually
-          </button>
-        </div>
-      </div>
-
+<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <div>
+    <h1 className="text-3xl font-bold text-gray-900">Students Management</h1>
+    <p className="text-gray-600 mt-1">Manage all student profiles and information</p>
+  </div>
+  <div className="flex flex-col sm:flex-row gap-3">
+    <Link
+      to="/admin/admission-requests"
+      className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 relative"
+    >
+      <InboxIcon className="h-5 w-5" />
+      Admission Requests
+      {/* Badge for pending requests */}
+      {pendingRequestsCount > 0 && (
+        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[1.5rem] h-6 flex items-center justify-center animate-pulse">
+          {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
+        </span>
+      )}
+    </Link>
+    <button
+      onClick={openAddModal}
+      className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+    >
+      <PlusIcon className="h-5 w-5" />
+      Add Student with Account
+    </button>
+    <button
+      onClick={openManualModal}
+      className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+    >
+      <UserPlusIcon className="h-5 w-5" />
+      Admit Student Manually
+    </button>
+  </div>
+</div>
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-blue-800">Total Students</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{students.length}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
               <UserGroupIcon className="h-6 w-6 text-blue-600" />
@@ -394,25 +618,23 @@ export default function StudentsPage() {
         <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-800">Registered Users</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{users.filter(u => u.role !== "ADMIN").length}</p>
+              <p className="text-sm font-medium text-green-800">Active Students</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.active}</p>
             </div>
             <div className="p-2 bg-green-100 rounded-lg">
-              <UserIcon className="h-6 w-6 text-green-600" />
+              <CheckCircleIcon className="h-6 w-6 text-green-600" />
             </div>
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-4">
+        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-800">Available Users</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {users.filter(u => u.role !== "ADMIN" && !students.some(s => s.user?.id === u.id)).length}
-              </p>
+              <p className="text-sm font-medium text-yellow-800">Inactive Students</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.inactive}</p>
             </div>
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <UserIcon className="h-6 w-6 text-purple-600" />
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <ArchiveBoxXMarkIcon className="h-6 w-6 text-yellow-600" />
             </div>
           </div>
         </div>
@@ -422,7 +644,7 @@ export default function StudentsPage() {
             <div>
               <p className="text-sm font-medium text-orange-800">Active Allocations</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {activeAllocations}
+                {stats.allocated}
               </p>
             </div>
             <div className="p-2 bg-orange-100 rounded-lg">
@@ -439,7 +661,7 @@ export default function StudentsPage() {
             <div>
               <p className="text-sm font-medium text-indigo-800">Students with Accounts</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {students.filter(s => s.user !== null).length}
+                {stats.withAccount}
               </p>
             </div>
             <div className="p-2 bg-indigo-100 rounded-lg">
@@ -453,7 +675,7 @@ export default function StudentsPage() {
             <div>
               <p className="text-sm font-medium text-teal-800">Manual Admissions</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {students.filter(s => s.user === null).length}
+                {stats.manual}
               </p>
             </div>
             <div className="p-2 bg-teal-100 rounded-lg">
@@ -463,58 +685,187 @@ export default function StudentsPage() {
         </div>
       </div>
 
+      {/* Search and Filters */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, CNIC, phone, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          {/* Filter Toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+          >
+            <FunnelIcon className="h-5 w-5" />
+            {showFilters ? "Hide Filters" : "Show Filters"}
+          </button>
+
+          {/* Clear Filters */}
+          {(searchTerm || filterStatus !== "active" || filterType !== "all" || sortField !== "name" || sortDirection !== "asc") && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg font-medium transition-colors"
+            >
+              <XMarkIcon className="h-5 w-5" />
+              Clear Filters
+            </button>
+          )}
+        </div>
+
+        {/* Filter Options */}
+        {showFilters && (
+          <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="active">Active Only</option>
+                <option value="inactive">Inactive Only</option>
+                <option value="all">All Status</option>
+              </select>
+            </div>
+
+            {/* Type Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Student Type
+              </label>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Types</option>
+                <option value="with-account">With Account</option>
+                <option value="manual">Manual Admission</option>
+              </select>
+            </div>
+
+            {/* Sort Field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Sort By
+              </label>
+              <select
+                value={sortField}
+                onChange={(e) => setSortField(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="name">Name</option>
+                <option value="cnic">CNIC</option>
+                <option value="type">Type</option>
+                <option value="status">Status</option>
+                <option value="collection">Total Collection</option>
+              </select>
+            </div>
+
+            {/* Sort Direction */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Order
+              </label>
+              <select
+                value={sortDirection}
+                onChange={(e) => setSortDirection(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Results Count */}
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-600">
+          Showing <span className="font-medium">{filteredAndSortedStudents.length}</span> of <span className="font-medium">{students.length}</span> students
+        </p>
+      </div>
+
       {/* Students Table */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
               <tr>
-                <th className="text-left py-4 px-6 font-semibold text-gray-700">Student Details</th>
+                <th 
+                  className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-200"
+                  onClick={() => toggleSort("name")}
+                >
+                  Student Details <SortIcon field="name" />
+                </th>
                 <th className="text-left py-4 px-6 font-semibold text-gray-700">Contact</th>
                 <th className="text-left py-4 px-6 font-semibold text-gray-700">Guardian</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-700">Type</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-700">Status</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-700">Total Collection</th>
+                <th 
+                  className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-200"
+                  onClick={() => toggleSort("type")}
+                >
+                  Type <SortIcon field="type" />
+                </th>
+                <th 
+                  className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-200"
+                  onClick={() => toggleSort("status")}
+                >
+                  Status <SortIcon field="status" />
+                </th>
+                <th 
+                  className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-200"
+                  onClick={() => toggleSort("collection")}
+                >
+                  Total Collection <SortIcon field="collection" />
+                </th>
                 <th className="text-left py-4 px-6 font-semibold text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {students.length === 0 ? (
+              {filteredAndSortedStudents.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <UserGroupIcon className="h-12 w-12 text-gray-400 mb-4" />
                       <p className="text-gray-600 font-medium mb-2">No students found</p>
                       <p className="text-gray-500 text-sm mb-4">
-                        Get started by adding your first student
+                        {searchTerm || filterStatus !== "active" || filterType !== "all" 
+                          ? "Try adjusting your filters"
+                          : "Get started by adding your first student"}
                       </p>
-                      <div className="flex gap-3">
+                      {(searchTerm || filterStatus !== "active" || filterType !== "all") && (
                         <button
-                          onClick={openAddModal}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          onClick={clearFilters}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                         >
-                          <PlusIcon className="h-4 w-4" />
-                          Add with Account
+                          Clear Filters
                         </button>
-                        <button
-                          onClick={openManualModal}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          <UserPlusIcon className="h-4 w-4" />
-                          Manual Admission
-                        </button>
-                      </div>
+                      )}
                     </div>
                   </td>
                 </tr>
               ) : (
-                students.map((student) => {
+                filteredAndSortedStudents.map((student) => {
                   const allocation = allocationsMap[student.id];
                   const isAllocated = allocation?.active === true;
                   const isManualAdmission = student.user === null;
+                  const isActive = student.active === true;
                   
                   return (
-                    <tr key={student.id} className="hover:bg-gray-50 transition-colors duration-200">
+                    <tr key={student.id} className={`hover:bg-gray-50 transition-colors duration-200 ${!isActive ? 'bg-gray-50' : ''}`}>
                       <td className="py-4 px-6">
                         <div>
                           <div className="font-medium text-gray-900">
@@ -581,15 +932,36 @@ export default function StudentsPage() {
                         </span>
                       </td>
                       <td className="py-4 px-6">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            isAllocated
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {isAllocated ? "Allocated" : "Not Allocated"}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                              isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {isActive ? (
+                              <>
+                                <CheckCircleIcon className="h-3 w-3 mr-1" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <ArchiveBoxIcon className="h-3 w-3 mr-1" />
+                                Inactive
+                              </>
+                            )}
+                          </span>
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                              isAllocated
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {isAllocated ? "Allocated" : "Not Allocated"}
+                          </span>
+                        </div>
                       </td>
                       <td className="py-4 px-6 relative group">
                         <div className="flex items-center gap-1 text-gray-700">
@@ -611,20 +983,40 @@ export default function StudentsPage() {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
+                          {/* Edit button - available to both admin and staff */}
                           <button
                             onClick={() => openEditModal(student)}
                             className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-medium transition-colors duration-200"
+                            title="Edit Student"
                           >
                             <PencilIcon className="h-4 w-4" />
                             Edit
                           </button>
-                          <button
-                            onClick={() => handleDelete(student.id)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg font-medium transition-colors duration-200"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                            Delete
-                          </button>
+                          
+                          {/* Admin-only actions */}
+                          {role === 'ADMIN' && (
+                            <>
+                              {/* Deactivate button - admin only */}
+                              <button
+                                onClick={() => handleDeactivate(student.id)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-lg font-medium transition-colors duration-200"
+                                title="Deactivate (soft delete)"
+                              >
+                                <ArchiveBoxIcon className="h-4 w-4" />
+                                Deactivate
+                              </button>
+                              
+                              {/* Hard Delete button - admin only */}
+                              <button
+                                onClick={() => handleHardDelete(student.id, student.name)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg font-medium transition-colors duration-200"
+                                title="Permanently Delete (removes all data)"
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                                Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -755,7 +1147,7 @@ export default function StudentsPage() {
   );
 }
 
-// Existing User Modal component
+// Existing User Modal component (unchanged)
 const Modal = memo(({
   editingStudentId,
   userSearch,
@@ -788,6 +1180,14 @@ const Modal = memo(({
       ).slice(0, 8)
     : [];
 
+  // Pre-fill CNIC from selected user if available and not editing
+  useEffect(() => {
+    if (selectedUser && selectedUser.id !== null && !editingStudentId) {
+      // When a user is selected for new admission, pre-fill CNIC from user
+      setCnic(selectedUser.cnic || "");
+    }
+  }, [selectedUser, editingStudentId]);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -814,7 +1214,25 @@ const Modal = memo(({
                 <div>
                   <p className="font-medium text-purple-800">Manual Admission Student</p>
                   <p className="text-sm text-purple-700">
-                    This student was admitted manually. You can update their details but cannot link to a user here.
+                    This student was admitted manually. You can update their details.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Show selected user info if editing a student with account */}
+          {editingStudentId && selectedUser && selectedUser.id !== null && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+              <div className="flex items-center gap-2">
+                <UserIcon className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="font-medium text-blue-800">Student with Account</p>
+                  <p className="text-sm text-blue-700">
+                    User: {selectedUser.name} ({selectedUser.email})
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    CNIC can be edited if needed
                   </p>
                 </div>
               </div>
@@ -870,12 +1288,16 @@ const Modal = memo(({
                     <div>
                       <p className="font-medium text-green-800">Selected User</p>
                       <p className="text-sm text-green-700">{selectedUser.name} ({selectedUser.email})</p>
+                      <p className="text-xs text-green-600 mt-1">
+                        CNIC will be pre-filled from user's registration
+                      </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedUser(null);
                         setUserSearch("");
+                        setCnic("");
                       }}
                       className="text-green-700 hover:text-green-900"
                       disabled={actionLoading}
@@ -888,19 +1310,32 @@ const Modal = memo(({
             </div>
           )}
 
+          {/* CNIC Field - ALWAYS VISIBLE */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               CNIC *
             </label>
             <input
               type="text"
-              placeholder="Enter CNIC (12345-1234567-1)"
+              inputMode="numeric"
+              placeholder="Enter 13-digit CNIC without dashes"
               value={cnic}
-              onChange={(e) => setCnic(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                if (val.length <= 13) {
+                  setCnic(val);
+                }
+              }}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               disabled={actionLoading}
               required
+              maxLength={13}
             />
+            {selectedUser && selectedUser.id !== null && !editingStudentId && (
+              <p className="text-xs text-blue-600 mt-1">
+                Pre-filled from user's registration. You can edit if needed.
+              </p>
+            )}
           </div>
 
           <div>
@@ -974,7 +1409,7 @@ const Modal = memo(({
   );
 });
 
-// Manual Admission Modal component
+// Manual Admission Modal component (updated with CNIC validation)
 const ManualAdmissionModal = memo(({
   manualName,
   setManualName,
@@ -1035,14 +1470,21 @@ const ManualAdmissionModal = memo(({
           </label>
           <input
             type="text"
-            placeholder="Enter CNIC (12345-1234567-1)"
+            inputMode="numeric"
+            placeholder="Enter 13-digit CNIC without dashes"
             value={manualCnic}
-            onChange={(e) => setManualCnic(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              if (val.length <= 13) {
+                setManualCnic(val);
+              }
+            }}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
             required
             disabled={actionLoading}
+            maxLength={13}
           />
-          <p className="text-xs text-gray-500 mt-1">Format: 12345-1234567-1 or 13 digits</p>
+          <p className="text-xs text-gray-500 mt-1">Enter 13 digits only (e.g., 1234512345671)</p>
         </div>
 
         <div>
@@ -1178,6 +1620,11 @@ function StudentsSkeleton() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Search and Filters Skeleton */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="h-10 bg-gray-200 rounded-lg w-full"></div>
       </div>
 
       {/* Table Skeleton */}

@@ -98,7 +98,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-gray-100 p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -137,19 +137,19 @@ export default function Login() {
             {/* Error Message */}
             {error && (
               <div className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${
-                showResendOption ? "bg-yellow-50 border border-yellow-200" : "bg-red-50 border border-red-200"
+                showResendOption ? "bg-orange-50 border border-orange-200" : "bg-red-50 border border-red-200"
               }`}>
                 <LockClosedIcon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
-                  showResendOption ? "text-yellow-600" : "text-red-600"
+                  showResendOption ? "text-orange-600" : "text-red-600"
                 }`} />
                 <div className="flex-1">
                   <p className={`font-medium ${
-                    showResendOption ? "text-yellow-800" : "text-red-800"
+                    showResendOption ? "text-orange-800" : "text-red-800"
                   }`}>
                     {showResendOption ? "Verification Required" : "Login Failed"}
                   </p>
                   <p className={`text-sm mt-1 ${
-                    showResendOption ? "text-yellow-700" : "text-red-600"
+                    showResendOption ? "text-orange-700" : "text-red-600"
                   }`}>
                     {error}
                   </p>
@@ -158,15 +158,15 @@ export default function Login() {
                   {showResendOption && (
                     <div className="mt-4">
                       <div className="flex items-center gap-3 mb-3">
-                        <ExclamationCircleIcon className="h-4 w-4 text-yellow-600" />
-                        <span className="text-sm text-yellow-700">
+                        <ExclamationCircleIcon className="h-4 w-4 text-orange-600" />
+                        <span className="text-sm text-orange-700">
                           Didn't receive verification email?
                         </span>
                       </div>
                       <button
                         onClick={handleResendVerification}
                         disabled={resending}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
                       >
                         {resending ? (
                           <>
@@ -201,7 +201,7 @@ export default function Login() {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                     required
                     disabled={loading || resending}
                   />
@@ -222,7 +222,7 @@ export default function Login() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                     required
                     disabled={loading || resending}
                   />
@@ -233,7 +233,7 @@ export default function Login() {
               <div className="flex justify-end">
                 <Link
                   to="/forgot-password"
-                  className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                  className="text-sm text-orange-600 hover:text-orange-800 transition-colors"
                 >
                   Forgot password?
                 </Link>
@@ -243,7 +243,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading || resending}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-lg font-semibold transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -266,7 +266,7 @@ export default function Login() {
                   Don't have an account?{" "}
                   <Link
                     to="/register"
-                    className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                    className="text-orange-600 hover:text-orange-800 font-medium transition-colors"
                   >
                     Create account
                   </Link>
@@ -277,28 +277,12 @@ export default function Login() {
                     New to Officers Hostel?{" "}
                     <Link
                       to="/"
-                      className="text-blue-600 hover:text-blue-800 font-medium"
+                      className="text-orange-600 hover:text-orange-800 font-medium"
                     >
                       Learn more about our services
                     </Link>
                   </p>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Information Section */}
-          <div className="bg-blue-50 px-8 py-4 border-t border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 bg-blue-100 rounded-lg">
-                <EnvelopeOpenIcon className="h-4 w-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-700 font-medium mb-1">Email Verification Required</p>
-                <p className="text-xs text-gray-600">
-                  All new accounts must verify their email address before logging in.
-                  Check your inbox for the verification link.
-                </p>
               </div>
             </div>
           </div>

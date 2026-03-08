@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
+import { useAuth } from "../../context/AuthContext"; // Add this import
 import {
   BanknotesIcon,
   MagnifyingGlassIcon,
@@ -11,29 +12,56 @@ import {
   UserCircleIcon,
   PrinterIcon,
   ArrowDownTrayIcon,
-  ArrowPathIcon, // ← added for spinner
+  ArrowPathIcon,
+  CalendarIcon,
+  ExclamationCircleIcon,
+  FunnelIcon,
+  PencilIcon,
 } from "@heroicons/react/24/outline";
 
 export default function FeesPage() {
+  const { role } = useAuth(); // Get user role
   const hostelId = localStorage.getItem("selectedHostelId");
 
   const [fees, setFees] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingFee, setEditingFee] = useState(null);
+  
+  // Search and filter state
   const [searchCnic, setSearchCnic] = useState("");
   const [searchName, setSearchName] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [monthFilter, setMonthFilter] = useState("");
 
-  // Loading states for receipt actions
+  // Loading states for actions
   const [downloadingId, setDownloadingId] = useState(null);
   const [printingId, setPrintingId] = useState(null);
+  const [markingPaidId, setMarkingPaidId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
 
-  // form state
+  // Form state for add modal
   const [studentId, setStudentId] = useState("");
   const [month, setMonth] = useState("");
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState("");
+
+  // Form state for edit modal
+  const [editStudentId, setEditStudentId] = useState("");
+  const [editMonth, setEditMonth] = useState("");
+  const [editAmount, setEditAmount] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
+
+  // Alert state
+  const [alert, setAlert] = useState({ show: false, type: "", message: "" });
+
+  const showAlert = (type, message) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => setAlert({ show: false, type: "", message: "" }), 3000);
+  };
 
   const fetchData = async () => {
     try {
@@ -46,6 +74,7 @@ export default function FeesPage() {
       setStudents(studentsRes.data);
     } catch (e) {
       console.error("Failed to load fees", e);
+      showAlert("error", "Failed to load fees. Please refresh.");
     } finally {
       setLoading(false);
     }
@@ -63,36 +92,86 @@ export default function FeesPage() {
     setShowModal(true);
   };
 
+  const openEditModal = (fee) => {
+    setEditingFee(fee);
+    setEditStudentId(fee.student.id.toString());
+    setEditMonth(fee.month);
+    setEditAmount(fee.amount.toString());
+    setEditDueDate(fee.dueDate);
+    setShowEditModal(true);
+  };
+
   const addFee = async (e) => {
     e.preventDefault();
     try {
       const res = await api.post(
         "/api/admin/fee",
         {
-          student: { id: studentId },
+          student: { id: parseInt(studentId) },
           month,
-          amount,
+          amount: parseFloat(amount),
           dueDate,
-          status: "UNPAID",
+          status: "UNPAID"
         },
         { params: { hostelId } }
       );
       setFees([...fees, res.data]);
       setShowModal(false);
+      showAlert("success", "Fee added successfully!");
     } catch (e) {
       console.error("Failed to add fee", e);
+      showAlert("error", e.response?.data?.message || "Failed to add fee");
+    }
+  };
+
+  const editFee = async (e) => {
+    e.preventDefault();
+    if (!editingFee) return;
+    
+    setEditingId(editingFee.id);
+    try {
+      const res = await api.put(
+        `/api/admin/fee/${editingFee.id}`,
+        {
+          student: { id: parseInt(editStudentId) },
+          month: editMonth,
+          amount: parseFloat(editAmount),
+          dueDate: editDueDate,
+        },
+        { params: { hostelId } }
+      );
+      
+      setFees(fees.map(f => f.id === editingFee.id ? res.data : f));
+      setShowEditModal(false);
+      setEditingFee(null);
+      showAlert("success", "Fee updated successfully!");
+    } catch (e) {
+      console.error("Failed to edit fee", e);
+      showAlert("error", e.response?.data?.message || "Failed to update fee");
+    } finally {
+      setEditingId(null);
     }
   };
 
   const markPaid = async (feeId) => {
-    const res = await api.put(`/api/admin/fee/${feeId}/pay`);
-    setFees(fees.map(f => (f.id === feeId ? res.data : f)));
+    setMarkingPaidId(feeId);
+    try {
+      const res = await api.put(`/api/admin/fee/${feeId}/pay`);
+      setFees(fees.map(f => (f.id === feeId ? res.data : f)));
+      showAlert("success", "Fee marked as paid successfully!");
+    } catch (e) {
+      console.error("Failed to mark as paid", e);
+      showAlert("error", e.response?.data?.message || "Failed to mark as paid");
+    } finally {
+      setMarkingPaidId(null);
+    }
   };
 
   const downloadReceipt = async (feeId) => {
     setDownloadingId(feeId);
     try {
-      const res = await api.get(`/api/admin/fee/${feeId}/receipt`, { 
+      const res = await api.get(`/api/admin/fee/${feeId}/receipt`, {
+        params: {hostelId}, 
         responseType: "blob" 
       });
       
@@ -107,9 +186,10 @@ export default function FeesPage() {
       document.body.removeChild(link);
       
       window.URL.revokeObjectURL(url);
+      showAlert("success", "Receipt downloaded successfully!");
     } catch (error) {
       console.error("Failed to download receipt", error);
-      alert("Failed to download receipt. Please try again.");
+      showAlert("error", "Failed to download receipt. Please try again.");
     } finally {
       setDownloadingId(null);
     }
@@ -119,6 +199,7 @@ export default function FeesPage() {
     setPrintingId(feeId);
     try {
       const res = await api.get(`/api/admin/fee/${feeId}/receipt`, { 
+        params: {hostelId},
         responseType: "blob" 
       });
       
@@ -129,26 +210,17 @@ export default function FeesPage() {
       
       if (printWindow) {
         printWindow.focus();
-        
         printWindow.onload = () => {
           setTimeout(() => {
             printWindow.print();
           }, 500);
         };
-        
-        setTimeout(() => {
-          if (printWindow && !printWindow.closed) {
-            printWindow.print();
-          }
-        }, 1000);
       } else {
-        alert("Pop-up blocked! Please allow pop-ups for this site to print receipts.");
+        showAlert("error", "Pop-up blocked! Please allow pop-ups to print receipts.");
       }
-      
-      // No revoke here – browser cleans up when window closes
     } catch (error) {
       console.error("Failed to print receipt", error);
-      alert("Failed to print receipt. Please try again.");
+      showAlert("error", "Failed to print receipt. Please try again.");
     } finally {
       setPrintingId(null);
     }
@@ -156,29 +228,63 @@ export default function FeesPage() {
 
   const deleteFee = async (feeId) => {
     if (!window.confirm("Are you sure you want to delete this fee record?")) return;
-    await api.delete(`/api/admin/fee/${feeId}`);
-    setFees(fees.filter(f => f.id !== feeId));
+    
+    setDeletingId(feeId);
+    try {
+      await api.delete(`/api/admin/fee/${feeId}`);
+      setFees(fees.filter(f => f.id !== feeId));
+      showAlert("success", "Fee deleted successfully!");
+    } catch (e) {
+      console.error("Failed to delete fee", e);
+      showAlert("error", e.response?.data?.message || "Failed to delete fee");
+    } finally {
+      setDeletingId(null);
+    }
   };
+
+  // Get unique months for filter
+  const uniqueMonths = [...new Set(fees.map(f => f.month))].sort().reverse();
 
   // Filter fees
   const filteredFees = fees.filter(f => {
     const matchesCnic = searchCnic 
-      ? f.student.cnic.toLowerCase().includes(searchCnic.toLowerCase())
+      ? f.student.cnic?.toLowerCase().includes(searchCnic.toLowerCase())
       : true;
     const matchesName = searchName
-      ? f.student.name.toLowerCase().includes(searchName.toLowerCase())
+      ? f.student.name?.toLowerCase().includes(searchName.toLowerCase())
       : true;
     const matchesStatus = statusFilter !== "ALL"
       ? f.status === statusFilter
       : true;
-    return matchesCnic && matchesName && matchesStatus;
+    const matchesMonth = monthFilter
+      ? f.month === monthFilter
+      : true;
+    return matchesCnic && matchesName && matchesStatus && matchesMonth;
   });
 
   // Statistics
+  const totalFees = fees.length;
   const paidFees = fees.filter(f => f.status === "PAID");
   const unpaidFees = fees.filter(f => f.status === "UNPAID");
   const totalCollected = paidFees.reduce((sum, fee) => sum + fee.amount, 0);
   const totalPending = unpaidFees.reduce((sum, fee) => sum + fee.amount, 0);
+  const overdueFees = unpaidFees.filter(f => new Date(f.dueDate) < new Date()).length;
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString('en-PK', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const clearFilters = () => {
+    setSearchCnic("");
+    setSearchName("");
+    setStatusFilter("ALL");
+    setMonthFilter("");
+  };
 
   if (loading) {
     return (
@@ -199,6 +305,24 @@ export default function FeesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Alert */}
+      {alert.show && (
+        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-xl shadow-lg ${
+          alert.type === "success" 
+            ? "bg-green-100 border border-green-400 text-green-800" 
+            : "bg-red-100 border border-red-400 text-red-800"
+        }`}>
+          <div className="flex items-center gap-3">
+            {alert.type === "success" ? (
+              <CheckCircleIcon className="h-6 w-6" />
+            ) : (
+              <ExclamationCircleIcon className="h-6 w-6" />
+            )}
+            <span className="font-medium">{alert.message}</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -206,6 +330,7 @@ export default function FeesPage() {
           <p className="text-gray-600 mt-1">Manage student fee records and payments</p>
         </div>
         
+        {/* Add New Fee button - Available to both Admin and Staff */}
         <button
           onClick={openAddModal}
           className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
@@ -215,20 +340,20 @@ export default function FeesPage() {
         </button>
       </div>
 
-      {/* Stats Cards (unchanged) */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* ... same as before ... */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm font-medium">Total Fees</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{fees.length}</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{totalFees}</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-lg">
               <BanknotesIcon className="h-6 w-6 text-blue-600" />
             </div>
           </div>
         </div>
+        
         <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -240,17 +365,22 @@ export default function FeesPage() {
             </div>
           </div>
         </div>
+        
         <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm font-medium">Unpaid Fees</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">{unpaidFees.length}</p>
+              {overdueFees > 0 && (
+                <p className="text-xs text-red-600 mt-1">{overdueFees} overdue</p>
+              )}
             </div>
             <div className="p-3 bg-red-100 rounded-lg">
-              <BanknotesIcon className="h-6 w-6 text-red-600" />
+              <ExclamationCircleIcon className="h-6 w-6 text-red-600" />
             </div>
           </div>
         </div>
+        
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -266,9 +396,9 @@ export default function FeesPage() {
         </div>
       </div>
 
-      {/* Search & Filter (unchanged) */}
+      {/* Search & Filter */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           {/* Search CNIC */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -285,6 +415,7 @@ export default function FeesPage() {
               />
             </div>
           </div>
+          
           {/* Search Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -301,6 +432,7 @@ export default function FeesPage() {
               />
             </div>
           </div>
+          
           {/* Status Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -316,17 +448,53 @@ export default function FeesPage() {
               <option value="UNPAID">Unpaid</option>
             </select>
           </div>
+
+          {/* Month Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filter by Month
+            </label>
+            <select
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
+            >
+              <option value="">All Months</option>
+              {uniqueMonths.map(month => (
+                <option key={month} value={month}>{month}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Clear Filters */}
+        {(searchCnic || searchName || statusFilter !== "ALL" || monthFilter) && (
+          <div className="flex justify-end">
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+            >
+              <XMarkIcon className="h-4 w-4" />
+              Clear Filters
+            </button>
+          </div>
+        )}
+
+        {/* Results Count */}
+        <div className="mt-4 text-sm text-gray-600">
+          Showing {filteredFees.length} of {fees.length} fee records
         </div>
 
         {/* Fees Table */}
-        <div className="overflow-x-auto rounded-xl border border-gray-200">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 mt-4">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Student Details</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Student</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Month</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Due Date</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Date</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
@@ -345,10 +513,28 @@ export default function FeesPage() {
                       <div className="text-sm text-gray-900">{fee.month}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900">Rs {fee.amount.toLocaleString()}</div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        Rs {fee.amount.toLocaleString()}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{new Date(fee.dueDate).toLocaleDateString()}</div>
+                      <div className="text-sm text-gray-900 flex items-center gap-1">
+                        <CalendarIcon className="h-4 w-4 text-gray-400" />
+                        {formatDate(fee.dueDate)}
+                      </div>
+                      {fee.status === "UNPAID" && new Date(fee.dueDate) < new Date() && (
+                        <span className="text-xs text-red-600 mt-1 block">Overdue</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {fee.paymentDate ? (
+                        <div className="text-sm text-gray-900 flex items-center gap-1">
+                          <CalendarIcon className="h-4 w-4 text-green-500" />
+                          {formatDate(fee.paymentDate)}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">Not paid yet</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
@@ -368,79 +554,100 @@ export default function FeesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
+                        {/* Edit button - available for all roles */}
+                        <button
+                          onClick={() => openEditModal(fee)}
+                          disabled={editingId === fee.id}
+                          className="inline-flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Edit Fee"
+                        >
+                          {editingId === fee.id ? (
+                            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <PencilIcon className="h-4 w-4" />
+                          )}
+                          Edit
+                        </button>
+                        
                         {fee.status !== "PAID" ? (
                           <>
                             <button
                               onClick={() => markPaid(fee.id)}
-                              className="inline-flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                              disabled={markingPaidId === fee.id}
+                              className="inline-flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Mark as Paid"
                             >
-                              <CheckCircleIcon className="h-4 w-4" />
+                              {markingPaidId === fee.id ? (
+                                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <CheckCircleIcon className="h-4 w-4" />
+                              )}
                               Mark Paid
                             </button>
-                            <button
-                              onClick={() => deleteFee(fee.id)}
-                              className="inline-flex items-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
-                              title="Delete Fee Record"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                              Delete
-                            </button>
+                            
+                            {/* Delete button - Admin only */}
+                            {role === 'ADMIN' && (
+                              <button
+                                onClick={() => deleteFee(fee.id)}
+                                disabled={deletingId === fee.id}
+                                className="inline-flex items-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Delete Fee Record"
+                              >
+                                {deletingId === fee.id ? (
+                                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <TrashIcon className="h-4 w-4" />
+                                )}
+                                Delete
+                              </button>
+                            )}
                           </>
                         ) : (
                           <>
-                            {/* Print button with loading */}
-                            <div className="relative group">
-                              <button
-                                onClick={() => printReceipt(fee.id)}
-                                disabled={printingId === fee.id}
-                                className="inline-flex items-center gap-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Print Receipt"
-                              >
-                                {printingId === fee.id ? (
-                                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <PrinterIcon className="h-4 w-4" />
-                                )}
-                                Print
-                              </button>
-                              {printingId !== fee.id && (
-                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
-                                  Opens print dialog
-                                </div>
+                            <button
+                              onClick={() => printReceipt(fee.id)}
+                              disabled={printingId === fee.id}
+                              className="inline-flex items-center gap-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Print Receipt"
+                            >
+                              {printingId === fee.id ? (
+                                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <PrinterIcon className="h-4 w-4" />
                               )}
-                            </div>
-                            
-                            {/* Download button with loading */}
-                            <div className="relative group">
-                              <button
-                                onClick={() => downloadReceipt(fee.id)}
-                                disabled={downloadingId === fee.id}
-                                className="inline-flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Download Receipt"
-                              >
-                                {downloadingId === fee.id ? (
-                                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <ArrowDownTrayIcon className="h-4 w-4" />
-                                )}
-                                Download
-                              </button>
-                              {downloadingId !== fee.id && (
-                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
-                                  Save PDF to device
-                                </div>
-                              )}
-                            </div>
+                              Print
+                            </button>
                             
                             <button
-                              onClick={() => deleteFee(fee.id)}
-                              className="inline-flex items-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
-                              title="Delete Fee Record"
+                              onClick={() => downloadReceipt(fee.id)}
+                              disabled={downloadingId === fee.id}
+                              className="inline-flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Download Receipt"
                             >
-                              <TrashIcon className="h-4 w-4" />
-                              Delete
+                              {downloadingId === fee.id ? (
+                                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <ArrowDownTrayIcon className="h-4 w-4" />
+                              )}
+                              Download
                             </button>
+                            
+                            {/* Delete button for paid fees - Admin only */}
+                            {role === 'ADMIN' && (
+                              <button
+                                onClick={() => deleteFee(fee.id)}
+                                disabled={deletingId === fee.id}
+                                className="inline-flex items-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Delete Fee Record"
+                              >
+                                {deletingId === fee.id ? (
+                                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <TrashIcon className="h-4 w-4" />
+                                )}
+                                Delete
+                              </button>
+                            )}
                           </>
                         )}
                       </div>
@@ -449,15 +656,23 @@ export default function FeesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center">
+                  <td colSpan="7" className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <BanknotesIcon className="h-12 w-12 text-gray-400 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">No fees found</h3>
                       <p className="text-gray-500">
-                        {searchCnic || searchName || statusFilter !== "ALL"
-                          ? "Try adjusting your search or filter"
+                        {searchCnic || searchName || statusFilter !== "ALL" || monthFilter
+                          ? "Try adjusting your search or filters"
                           : "No fee records available. Add your first fee record."}
                       </p>
+                      {(searchCnic || searchName || statusFilter !== "ALL" || monthFilter) && (
+                        <button
+                          onClick={clearFilters}
+                          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -467,7 +682,7 @@ export default function FeesPage() {
         </div>
       </div>
 
-      {/* Add Fee Modal (unchanged) */}
+      {/* Add Fee Modal - Available to both Admin and Staff */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-fadeIn">
@@ -492,7 +707,9 @@ export default function FeesPage() {
 
               <form onSubmit={addFee} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Student</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Student *
+                  </label>
                   <select
                     value={studentId}
                     onChange={(e) => setStudentId(e.target.value)}
@@ -506,10 +723,17 @@ export default function FeesPage() {
                       </option>
                     ))}
                   </select>
+                  {students.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      No active students available. Please add students first.
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Month *
+                  </label>
                   <input
                     type="month"
                     value={month}
@@ -520,7 +744,9 @@ export default function FeesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount (₹)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Amount (Rs) *
+                  </label>
                   <input
                     type="number"
                     placeholder="Enter amount"
@@ -534,7 +760,9 @@ export default function FeesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Due Date *
+                  </label>
                   <input
                     type="date"
                     value={dueDate}
@@ -557,6 +785,126 @@ export default function FeesPage() {
                     className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-colors font-medium"
                   >
                     Add Fee Record
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Fee Modal - Available for all roles */}
+      {showEditModal && editingFee && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-fadeIn">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <PencilIcon className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Edit Fee</h2>
+                    <p className="text-gray-600 text-sm">Update fee record</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingFee(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <form onSubmit={editFee} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Student *
+                  </label>
+                  <select
+                    value={editStudentId}
+                    onChange={(e) => setEditStudentId(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  >
+                    <option value="">Choose a student</option>
+                    {students.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} - CNIC: {s.cnic}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Month *
+                  </label>
+                  <input
+                    type="month"
+                    value={editMonth}
+                    onChange={(e) => setEditMonth(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Amount (Rs) *
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Enter amount"
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Due Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={editDueDate}
+                    onChange={(e) => setEditDueDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingFee(null);
+                    }}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editingId === editingFee.id}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-colors font-medium disabled:opacity-50"
+                  >
+                    {editingId === editingFee.id ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                        Updating...
+                      </span>
+                    ) : (
+                      'Update Fee'
+                    )}
                   </button>
                 </div>
               </form>
