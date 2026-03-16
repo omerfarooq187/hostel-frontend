@@ -69,15 +69,13 @@ export default function Profile() {
     guardianPhone: "",
     preferredHostelId: ""
   });
-
-
-  const [formErrors, setFormErrors] = useState({});
+  const [requestFormErrors, setRequestFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Form states for profile edit
   const [editMode, setEditMode] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [downloading, setDownloading] = useState({});
-
+  const [profileFormErrors, setProfileFormErrors] = useState({});
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -85,6 +83,7 @@ export default function Profile() {
     guardianPhone: "",
   });
 
+  const [downloading, setDownloading] = useState({});
 
   // Fetch hostels from public endpoint
   const fetchHostels = async () => {
@@ -248,89 +247,160 @@ export default function Profile() {
     }
   }, [showRequestForm, hostels.length]);
 
+  // Handle profile form changes
   const handleChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-const handleRequestChange = (e) => {
-  const { name, value } = e.target;
-  
-  // For phone fields, only allow digits
-  if (name === 'phone' || name === 'guardianPhone') {
-    const digitsOnly = value.replace(/\D/g, '');
-    // Limit to 11 digits
-    if (digitsOnly.length <= 11) {
-      setRequestForm(prev => ({
+    const { name, value } = e.target;
+    
+    // For phone fields, only allow digits
+    if (name === 'phone' || name === 'guardianPhone') {
+      const digitsOnly = value.replace(/\D/g, '');
+      if (digitsOnly.length <= 11) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: digitsOnly
+        }));
+      }
+    } else {
+      setFormData(prev => ({
         ...prev,
-        [name]: digitsOnly
+        [name]: value
       }));
     }
-  } else {
-    setRequestForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  }
-  
-  // Clear error for this field when user starts typing
-  if (formErrors[name]) {
-    setFormErrors(prev => ({
-      ...prev,
-      [name]: null
-    }));
-  }
-};
+    
+    // Clear error for this field when user starts typing
+    if (profileFormErrors[name]) {
+      setProfileFormErrors(prev => ({
+        ...prev,
+        [name]: null
+      }));
+    }
+  };
 
-  // Validate form fields
-const validateForm = () => {
-  const errors = {};
-  
-  // Phone validation - required and exactly 11 digits
-  if (!requestForm.phone) {
-    errors.phone = "Phone number is required";
-  } else if (!/^\d{11}$/.test(requestForm.phone)) {
-    errors.phone = "Phone number must be exactly 11 digits";
-  }
-  
-  // Guardian Name validation - required
-  if (!requestForm.guardianName || !requestForm.guardianName.trim()) {
-    errors.guardianName = "Guardian name is required";
-  } else if (requestForm.guardianName.trim().length < 3) {
-    errors.guardianName = "Guardian name must be at least 3 characters";
-  }
-  
-  // Guardian Phone validation - required and exactly 11 digits
-  if (!requestForm.guardianPhone) {
-    errors.guardianPhone = "Guardian phone number is required";
-  } else if (!/^\d{11}$/.test(requestForm.guardianPhone)) {
-    errors.guardianPhone = "Guardian phone must be exactly 11 digits";
-  }
-  
-  // Hostel selection validation - required
-  if (!requestForm.preferredHostelId) {
-    errors.preferredHostelId = "Please select a preferred hostel";
-  }
-  
-  setFormErrors(errors);
-  return Object.keys(errors).length === 0;
-};
+  // Handle request form changes
+  const handleRequestChange = (e) => {
+    const { name, value } = e.target;
+    
+    // For phone fields, only allow digits
+    if (name === 'phone' || name === 'guardianPhone') {
+      const digitsOnly = value.replace(/\D/g, '');
+      // Limit to 11 digits for request form
+      if (digitsOnly.length <= 11) {
+        setRequestForm(prev => ({
+          ...prev,
+          [name]: digitsOnly
+        }));
+      }
+    } else {
+      setRequestForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+    
+    // Clear error for this field when user starts typing
+    if (requestFormErrors[name]) {
+      setRequestFormErrors(prev => ({
+        ...prev,
+        [name]: null
+      }));
+    }
+  };
 
+  // Validate profile form
+  const validateProfileForm = () => {
+    const errors = {};
+    
+    // Name validation
+    if (!formData.name || !formData.name.trim()) {
+      errors.name = "Full name is required";
+    } else if (formData.name.trim().length < 3) {
+      errors.name = "Name must be at least 3 characters";
+    }
+    
+    // Phone validation - exactly 11 digits
+    if (!formData.phone) {
+      errors.phone = "Phone number is required";
+    } else if (!/^\d{11}$/.test(formData.phone)) {
+      errors.phone = "Phone number must be exactly 11 digits";
+    }
+    
+    // Guardian Name validation
+    if (!formData.guardianName || !formData.guardianName.trim()) {
+      errors.guardianName = "Guardian name is required";
+    } else if (formData.guardianName.trim().length < 3) {
+      errors.guardianName = "Guardian name must be at least 3 characters";
+    }
+    
+    // Guardian Phone validation - exactly 11 digits
+    if (!formData.guardianPhone) {
+      errors.guardianPhone = "Guardian phone number is required";
+    } else if (!/^\d{11}$/.test(formData.guardianPhone)) {
+      errors.guardianPhone = "Guardian phone must be exactly 11 digits";
+    }
+    
+    setProfileFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Validate request form
+  const validateRequestForm = () => {
+    const errors = {};
+    
+    // Phone validation - required and exactly 11 digits
+    if (!requestForm.phone) {
+      errors.phone = "Phone number is required";
+    } else if (!/^\d{11}$/.test(requestForm.phone)) {
+      errors.phone = "Phone number must be exactly 11 digits";
+    }
+    
+    // Guardian Name validation - required
+    if (!requestForm.guardianName || !requestForm.guardianName.trim()) {
+      errors.guardianName = "Guardian name is required";
+    } else if (requestForm.guardianName.trim().length < 3) {
+      errors.guardianName = "Guardian name must be at least 3 characters";
+    }
+    
+    // Guardian Phone validation - required and exactly 11 digits
+    if (!requestForm.guardianPhone) {
+      errors.guardianPhone = "Guardian phone number is required";
+    } else if (!/^\d{11}$/.test(requestForm.guardianPhone)) {
+      errors.guardianPhone = "Guardian phone must be exactly 11 digits";
+    }
+    
+    // Hostel selection validation - required
+    if (!requestForm.preferredHostelId) {
+      errors.preferredHostelId = "Please select a preferred hostel";
+    }
+    
+    setRequestFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle profile update
   const handleUpdate = async () => {
+    // Validate all fields before submitting
+    if (!validateProfileForm()) {
+      // Scroll to first error
+      const firstError = document.querySelector('.border-red-500');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    
     setUpdating(true);
     try {
       await api.put("/api/user/me", {
-        name: formData.name,
+        name: formData.name.trim(),
         phone: formData.phone,
-        guardianName: formData.guardianName,
+        guardianName: formData.guardianName.trim(),
         guardianPhone: formData.guardianPhone,
       });
 
       // Refresh data
       const studentRes = await api.get("/api/student/me");
       setStudent(studentRes.data);
+      setProfileFormErrors({});
 
       setEditMode(false);
       alert("Profile updated successfully!");
@@ -341,61 +411,64 @@ const validateForm = () => {
     }
   };
 
+  // Handle request submission
   const handleSubmitRequest = async (e) => {
-  e.preventDefault();
-  
-  // Validate all fields
-  if (!validateForm()) {
-    // Scroll to the first error
-    const firstError = document.querySelector('.border-red-500');
-    if (firstError) {
-      firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    e.preventDefault();
+    
+    // Validate all fields
+    if (!validateRequestForm()) {
+      // Scroll to the first error
+      const firstError = document.querySelector('.border-red-500');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
     }
-    return;
-  }
-  
-  setSubmitting(true);
-  
-  try {
-    await api.post("/api/student/admission/submit", {
-      phone: requestForm.phone,
-      guardianName: requestForm.guardianName.trim(),
-      guardianPhone: requestForm.guardianPhone,
-      preferredHostelId: parseInt(requestForm.preferredHostelId)
-    });
     
-    alert("Admission request submitted successfully!");
+    setSubmitting(true);
     
-    // Reset form
-    setRequestForm({
-      phone: "",
-      guardianName: "",
-      guardianPhone: "",
-      preferredHostelId: ""
-    });
-    setFormErrors({});
-    
-    // Hide the form
-    setShowRequestForm(false);
-    
-    // Refresh the admission status
-    setLoading(true);
-    await fetchAdmissionStatus();
-    
-  } catch (err) {
-    console.error("Submission error:", err);
-    if (err.response?.data?.message?.includes("already have a pending")) {
-      alert("You already have a pending request. Please wait for admin approval.");
+    try {
+      await api.post("/api/student/admission/submit", {
+        phone: requestForm.phone,
+        guardianName: requestForm.guardianName.trim(),
+        guardianPhone: requestForm.guardianPhone,
+        preferredHostelId: parseInt(requestForm.preferredHostelId)
+      });
+      
+      alert("Admission request submitted successfully!");
+      
+      // Reset form
+      setRequestForm({
+        phone: "",
+        guardianName: "",
+        guardianPhone: "",
+        preferredHostelId: ""
+      });
+      setRequestFormErrors({});
+      
+      // Hide the form
       setShowRequestForm(false);
+      
+      // Refresh the admission status
       setLoading(true);
       await fetchAdmissionStatus();
-    } else {
-      alert(err.response?.data?.message || "Failed to submit request");
+      
+    } catch (err) {
+      console.error("Submission error:", err);
+      // Check if error is because user already has pending request
+      if (err.response?.data?.message?.includes("already have a pending")) {
+        alert("You already have a pending request. Please wait for admin approval.");
+        // Refresh status to show pending state
+        setShowRequestForm(false);
+        setLoading(true);
+        await fetchAdmissionStatus();
+      } else {
+        alert(err.response?.data?.message || "Failed to submit request");
+      }
+    } finally {
+      setSubmitting(false);
     }
-  } finally {
-    setSubmitting(false);
-  }
-};
+  };
 
   const downloadReceipt = async (feeId) => {
     setDownloading(prev => ({ ...prev, [feeId]: true }));
@@ -680,14 +753,14 @@ const validateForm = () => {
                         value={requestForm.phone}
                         onChange={handleRequestChange}
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-transparent ${
-                          formErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                          requestFormErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-300'
                         }`}
                         placeholder="03xxxxxxxxx"
                         maxLength="11"
                       />
                     </div>
-                    {formErrors.phone ? (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.phone}</p>
+                    {requestFormErrors.phone ? (
+                      <p className="mt-1 text-sm text-red-600">{requestFormErrors.phone}</p>
                     ) : (
                       <p className="mt-1 text-xs text-gray-500">
                         {requestForm.phone.length || 0}/11 digits
@@ -708,13 +781,13 @@ const validateForm = () => {
                         value={requestForm.guardianName}
                         onChange={handleRequestChange}
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-transparent ${
-                          formErrors.guardianName ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                          requestFormErrors.guardianName ? 'border-red-500 bg-red-50' : 'border-gray-300'
                         }`}
                         placeholder="Guardian's full name"
                       />
                     </div>
-                    {formErrors.guardianName && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.guardianName}</p>
+                    {requestFormErrors.guardianName && (
+                      <p className="mt-1 text-sm text-red-600">{requestFormErrors.guardianName}</p>
                     )}
                   </div>
 
@@ -731,14 +804,14 @@ const validateForm = () => {
                         value={requestForm.guardianPhone}
                         onChange={handleRequestChange}
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-transparent ${
-                          formErrors.guardianPhone ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                          requestFormErrors.guardianPhone ? 'border-red-500 bg-red-50' : 'border-gray-300'
                         }`}
                         placeholder="03xxxxxxxxx"
                         maxLength="11"
                       />
                     </div>
-                    {formErrors.guardianPhone ? (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.guardianPhone}</p>
+                    {requestFormErrors.guardianPhone ? (
+                      <p className="mt-1 text-sm text-red-600">{requestFormErrors.guardianPhone}</p>
                     ) : (
                       <p className="mt-1 text-xs text-gray-500">
                         {requestForm.guardianPhone.length || 0}/11 digits
@@ -756,7 +829,7 @@ const validateForm = () => {
                       value={requestForm.preferredHostelId}
                       onChange={handleRequestChange}
                       className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-transparent ${
-                        formErrors.preferredHostelId ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        requestFormErrors.preferredHostelId ? 'border-red-500 bg-red-50' : 'border-gray-300'
                       }`}
                     >
                       <option value="">-- Choose a hostel --</option>
@@ -772,8 +845,8 @@ const validateForm = () => {
                         <option disabled>No hostels available</option>
                       )}
                     </select>
-                    {formErrors.preferredHostelId && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.preferredHostelId}</p>
+                    {requestFormErrors.preferredHostelId && (
+                      <p className="mt-1 text-sm text-red-600">{requestFormErrors.preferredHostelId}</p>
                     )}
                   </div>
 
@@ -812,112 +885,110 @@ const validateForm = () => {
   }
 
   // Show Pending Request UI
-  // Show Pending Request UI
-if (admissionStatus === 'PENDING') {
-  return (
-    <div className="min-h-screen bg-gray-50 font-sans pt-24">
-      <div className="bg-gradient-to-r from-[#F97316] to-[#EA580C]">
-        <div className="container mx-auto px-4 py-8 sm:py-12">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="p-2 sm:p-3 bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl">
-              <ClockIcon className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white break-words">
-                Admission Request Pending
-              </h1>
-              <p className="text-white/90 text-sm sm:text-base mt-1">
-                Your request is under review
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 -mt-8 pb-12">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 animate-fade-in-up">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-yellow-100 rounded-full mb-6 mx-auto">
-              <ClockIcon className="h-10 w-10 text-yellow-600" />
-            </div>
-            
-            <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">Request Pending Review</h2>
-            
-            <p className="text-gray-600 mb-8 max-w-md mx-auto text-center">
-              Your admission request has been submitted and is waiting for admin approval.
-              You will be notified once your request is processed.
-            </p>
-
-            {/* Request Details Card */}
-            {student && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-8">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-yellow-200">
-                  Request Details
-                </h3>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium">Full Name</p>
-                      <p className="text-gray-800 font-semibold">{student.name || "Not provided"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium">CNIC</p>
-                      <p className="text-gray-800 font-semibold">{student.cnic || "Not provided"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium">Phone Number</p>
-                      <p className="text-gray-800 font-semibold">{student.phone || "Not provided"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium">Guardian Name</p>
-                      <p className="text-gray-800 font-semibold">{student.guardianName || "Not provided"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium">Guardian Phone</p>
-                      <p className="text-gray-800 font-semibold">{student.guardianPhone || "Not provided"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium">Submitted On</p>
-                      <p className="text-gray-800 font-semibold">{formatDate(student.requestedAt)}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Preferred Hostel if available */}
-                  {student.hostel && (
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500 font-medium">Preferred Hostel</p>
-                      <p className="text-gray-800 font-semibold">{student.hostel.name}</p>
-                    </div>
-                  )}
-                </div>
+  if (admissionStatus === 'PENDING') {
+    return (
+      <div className="min-h-screen bg-gray-50 font-sans pt-24">
+        <div className="bg-gradient-to-r from-[#F97316] to-[#EA580C]">
+          <div className="container mx-auto px-4 py-8 sm:py-12">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl">
+                <ClockIcon className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
               </div>
-            )}
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white break-words">
+                  Admission Request Pending
+                </h1>
+                <p className="text-white/90 text-sm sm:text-base mt-1">
+                  Your request is under review
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            <div className="flex flex-col items-center gap-4">
-              <button
-                onClick={() => {
-                  setLoading(true);
-                  fetchAdmissionStatus();
-                }}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-medium transition-colors"
-              >
-                <ArrowPathIcon className="h-5 w-5" />
-                Check Status
-              </button>
+        <div className="container mx-auto px-4 -mt-8 pb-12">
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 animate-fade-in-up">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-yellow-100 rounded-full mb-6 mx-auto">
+                <ClockIcon className="h-10 w-10 text-yellow-600" />
+              </div>
               
-              <p className="text-sm text-gray-500">
-                Last checked: {new Date().toLocaleTimeString()}
+              <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">Request Pending Review</h2>
+              
+              <p className="text-gray-600 mb-8 max-w-md mx-auto text-center">
+                Your admission request has been submitted and is waiting for admin approval.
+                You will be notified once your request is processed.
               </p>
+
+              {/* Request Details Card */}
+              {student && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-8">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-yellow-200">
+                    Request Details
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium">Full Name</p>
+                        <p className="text-gray-800 font-semibold">{student.name || "Not provided"}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium">CNIC</p>
+                        <p className="text-gray-800 font-semibold">{student.cnic || "Not provided"}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium">Phone Number</p>
+                        <p className="text-gray-800 font-semibold">{student.phone || "Not provided"}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium">Guardian Name</p>
+                        <p className="text-gray-800 font-semibold">{student.guardianName || "Not provided"}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium">Guardian Phone</p>
+                        <p className="text-gray-800 font-semibold">{student.guardianPhone || "Not provided"}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium">Submitted On</p>
+                        <p className="text-gray-800 font-semibold">{formatDate(student.requestedAt)}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Preferred Hostel if available */}
+                    {student.hostel && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500 font-medium">Preferred Hostel</p>
+                        <p className="text-gray-800 font-semibold">{student.hostel.name}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col items-center gap-4">
+                <button
+                  onClick={() => {
+                    setLoading(true);
+                    fetchAdmissionStatus();
+                  }}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-medium transition-colors"
+                >
+                  <ArrowPathIcon className="h-5 w-5" />
+                  Check Status
+                </button>
+                
+                <p className="text-sm text-gray-500">
+                  Last checked: {new Date().toLocaleTimeString()}
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   // Show Rejected Request UI
-// Show Rejected Request UI
   if (admissionStatus === 'REJECTED') {
     return (
       <div className="min-h-screen bg-gray-50 font-sans pt-24">
@@ -1179,58 +1250,95 @@ if (admissionStatus === 'PENDING') {
               <div className="p-6">
                 {editMode ? (
                   <div className="space-y-6">
+                    {/* Full Name */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name
+                        Full Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all"
+                        className={`w-full px-4 py-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all ${
+                          profileFormErrors.name ? 'border-red-500' : 'border-gray-300'
+                        }`}
                         placeholder="Enter your full name"
                       />
+                      {profileFormErrors.name && (
+                        <p className="mt-1 text-sm text-red-600">{profileFormErrors.name}</p>
+                      )}
                     </div>
 
+                    {/* Phone Number */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number
+                        Phone Number <span className="text-red-500">*</span>
                       </label>
                       <input
                         name="phone"
+                        type="tel"
                         value={formData.phone}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all"
-                        placeholder="Enter your phone number"
+                        maxLength="11"
+                        className={`w-full px-4 py-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all ${
+                          profileFormErrors.phone ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter 11-digit phone number"
                       />
+                      {profileFormErrors.phone ? (
+                        <p className="mt-1 text-sm text-red-600">{profileFormErrors.phone}</p>
+                      ) : (
+                        <p className="mt-1 text-xs text-gray-500">
+                          {formData.phone?.length || 0}/11 digits
+                        </p>
+                      )}
                     </div>
 
+                    {/* Guardian Name */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Guardian Name
+                        Guardian Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         name="guardianName"
                         value={formData.guardianName}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all"
+                        className={`w-full px-4 py-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all ${
+                          profileFormErrors.guardianName ? 'border-red-500' : 'border-gray-300'
+                        }`}
                         placeholder="Enter guardian name"
                       />
+                      {profileFormErrors.guardianName && (
+                        <p className="mt-1 text-sm text-red-600">{profileFormErrors.guardianName}</p>
+                      )}
                     </div>
 
+                    {/* Guardian Phone */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Guardian Phone
+                        Guardian Phone <span className="text-red-500">*</span>
                       </label>
                       <input
                         name="guardianPhone"
+                        type="tel"
                         value={formData.guardianPhone}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all"
-                        placeholder="Enter guardian phone"
+                        maxLength="11"
+                        className={`w-full px-4 py-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all ${
+                          profileFormErrors.guardianPhone ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter 11-digit guardian phone number"
                       />
+                      {profileFormErrors.guardianPhone ? (
+                        <p className="mt-1 text-sm text-red-600">{profileFormErrors.guardianPhone}</p>
+                      ) : (
+                        <p className="mt-1 text-xs text-gray-500">
+                          {formData.guardianPhone?.length || 0}/11 digits
+                        </p>
+                      )}
                     </div>
 
+                    {/* Buttons */}
                     <div className="flex gap-3">
                       <button
                         onClick={handleUpdate}
@@ -1274,25 +1382,25 @@ if (admissionStatus === 'PENDING') {
                     <InfoItem
                       icon={<IdentificationIcon className="h-5 w-5" />}
                       label="CNIC"
-                      value={student?.studentRequest.cnic}
+                      value={student?.studentRequest?.cnic}
                       color="orange"
                     />
                     <InfoItem
                       icon={<PhoneIcon className="h-5 w-5" />}
                       label="Phone"
-                      value={student?.studentRequest.phone || "Not provided"}
+                      value={student?.studentRequest?.phone || "Not provided"}
                       color="orange"
                     />
                     <InfoItem
                       icon={<UserGroupIcon className="h-5 w-5" />}
                       label="Guardian Name"
-                      value={student?.studentRequest.guardianName || "Not provided"}
+                      value={student?.studentRequest?.guardianName || "Not provided"}
                       color="orange"
                     />
                     <InfoItem
                       icon={<PhoneIcon className="h-5 w-5" />}
                       label="Guardian Phone"
-                      value={student?.studentRequest.guardianPhoneNumber || "Not provided"}
+                      value={student?.studentRequest?.guardianPhoneNumber || "Not provided"}
                       color="orange"
                     />
                   </div>

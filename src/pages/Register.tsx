@@ -214,7 +214,7 @@ export default function Register() {
                     </div>
                     <input
                       type="text"
-                      placeholder="John Doe"
+                      placeholder="Enter your full name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
@@ -235,7 +235,7 @@ export default function Register() {
                     </div>
                     <input
                       type="email"
-                      placeholder="john@example.com"
+                      placeholder="Enter your email address"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
@@ -257,7 +257,7 @@ export default function Register() {
                     <input
                       type="text"
                       inputMode="numeric"
-                      placeholder="0000000000000"
+                      placeholder="Enter your CNIC"
                       value={cnic}
                       onChange={handleCnicChange}
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
