@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.innovatewithomer.officershostel",
+    "sha256_cert_fingerprints": [
+      "18:83:29:76:FC:5C:1B:79:96:C1:48:CA:EA:22:58:E4:CD:AC:2C:89:11:76:04:12:BA:6C:00:44:81:4D:CB:35"
+    ]
+  }
+}]

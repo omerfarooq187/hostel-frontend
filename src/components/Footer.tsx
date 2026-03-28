@@ -2,8 +2,9 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/ogoh_logo.png";
 import {
-  BuildingOfficeIcon,
   ChatBubbleLeftRightIcon,
+  ShieldCheckIcon,
+  ScaleIcon,
 } from "@heroicons/react/24/outline";
 
 // Social Icons
@@ -25,98 +26,215 @@ const TwitterIcon = () => (
   </svg>
 );
 
+const WhatsAppIcon = () => (
+  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+    <path fillRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12c0 2.09.59 4.02 1.6 5.66L2 22l4.34-1.6C7.98 21.41 9.91 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.68 0-3.23-.46-4.58-1.26l-.33-.2-2.58.97.97-2.58-.2-.33A7.99 7.99 0 014 12c0-4.42 3.58-8 8-8s8 3.58 8 8-3.58 8-8 8z" />
+  </svg>
+);
+
 export default function Footer() {
   const { token, logout } = useAuth();
   const currentYear = new Date().getFullYear();
 
   const socialLinks = [
-    { name: "Facebook", icon: FacebookIcon, url: "#" },
-    { name: "Instagram", icon: InstagramIcon, url: "#" },
-    { name: "Twitter", icon: TwitterIcon, url: "#" },
-    { name: "Chat", icon: ChatBubbleLeftRightIcon, url: "#" },
+    { name: "Facebook", icon: FacebookIcon, url: "https://facebook.com/offhostel" },
+    { name: "Instagram", icon: InstagramIcon, url: "https://instagram.com/offhostel" },
+    { name: "Twitter", icon: TwitterIcon, url: "https://twitter.com/offhostel" },
+    { name: "WhatsApp", icon: WhatsAppIcon, url: "https://wa.me/923358332755" },
+  ];
+
+  const legalLinks = [
+    { name: "Privacy Policy", path: "/privacy", icon: ShieldCheckIcon },
+    { name: "Terms of Service", path: "/terms", icon: ScaleIcon }
   ];
 
   return (
-    <footer className="bg-heading-color text-light-color mt-auto font-sans border-t border-primary/10">
+    <footer className="bg-gray-900 text-gray-300 mt-auto font-sans border-t border-gray-800">
       <div className="container mx-auto px-4 py-8">
-        {/* Main footer content */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Brand */}
-          <div className="flex items-center space-x-3">
-            <img 
-              src={logo} 
-              alt="Officers Group of Hostels" 
-              className="h-8 w-auto object-contain" 
-            />
-            <span className="text-lg font-semibold tracking-tight">
-              Officers Group of Hostels
-            </span>
+        {/* Main footer grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Brand Section */}
+          <div className="text-center md:text-left">
+            <div className="flex items-center justify-center md:justify-start space-x-3 mb-4">
+              <img 
+                src={logo} 
+                alt="Officers Group of Hostels" 
+                className="h-10 w-auto object-contain" 
+              />
+              <span className="text-lg font-semibold text-white tracking-tight">
+                Officers Group of Hostels
+              </span>
+            </div>
+            <p className="text-sm text-gray-400">
+              Premium student accommodation with world-class amenities across Mandra and Islamabad.
+            </p>
           </div>
 
-          {/* Social Icons */}
-          <div className="flex space-x-3">
-            {socialLinks.map((social) => {
-              const Icon = social.icon;
-              return (
-                <a
-                  key={social.name}
-                  href={social.url}
-                  className="p-2 bg-black-color text-meta-color rounded-full transition-all duration-300 hover:scale-110 hover:bg-primary hover:text-light-color"
-                  aria-label={social.name}
-                >
-                  <Icon />
-                </a>
-              );
-            })}
-          </div>
+{/* Quick Links Section */}
+<div className="text-center">
+  <h4 className="text-white font-semibold mb-4">Quick Links</h4>
+  <ul className="space-y-2 text-sm">
+    <li>
+      <a 
+        href="#home" 
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        className="text-gray-400 hover:text-orange-500 transition-colors cursor-pointer"
+      >
+        Home
+      </a>
+    </li>
+    <li>
+      <a 
+        href="#about" 
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        className="text-gray-400 hover:text-orange-500 transition-colors cursor-pointer"
+      >
+        About Us
+      </a>
+    </li>
+    <li>
+      <a 
+        href="#branches" 
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('branches')?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        className="text-gray-400 hover:text-orange-500 transition-colors cursor-pointer"
+      >
+        Our Branches
+      </a>
+    </li>
+    <li>
+      <a 
+        href="#features" 
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        className="text-gray-400 hover:text-orange-500 transition-colors cursor-pointer"
+      >
+        Features
+      </a>
+    </li>
+    <li>
+      <a 
+        href="#contact" 
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        className="text-gray-400 hover:text-orange-500 transition-colors cursor-pointer"
+      >
+        Contact
+      </a>
+    </li>
+    {token ? (
+      <>
+        <li>
+          <Link to="/profile" className="text-gray-400 hover:text-orange-500 transition-colors">
+            My Profile
+          </Link>
+        </li>
+        <li>
+          <button
+            onClick={logout}
+            className="text-gray-400 hover:text-orange-500 transition-colors cursor-pointer"
+          >
+            Logout
+          </button>
+        </li>
+      </>
+    ) : (
+      <li>
+        <Link to="/login" className="text-gray-400 hover:text-orange-500 transition-colors">
+          Login / Register
+        </Link>
+      </li>
+    )}
+  </ul>
+</div>
 
-          {/* Navigation */}
-          <div className="flex items-center space-x-5 text-sm">
-            <Link to="/" className="text-meta-color hover:text-primary transition-colors">
-              Home
-            </Link>
-            {token ? (
-              <>
-                <Link to="/profile" className="text-meta-color hover:text-primary transition-colors">
-                  Profile
-                </Link>
-                <button
-                  onClick={logout}
-                  className="text-meta-color hover:text-primary transition-colors cursor-pointer"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <Link to="/login" className="text-meta-color hover:text-primary transition-colors">
-                Login
-              </Link>
-            )}
+          {/* Legal Section */}
+          <div className="text-center md:text-right">
+            <h4 className="text-white font-semibold mb-4">Legal</h4>
+            <ul className="space-y-2 text-sm">
+              {legalLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <li key={link.name}>
+                    <Link 
+                      to={link.path} 
+                      className="inline-flex items-center gap-2 text-gray-400 hover:text-orange-500 transition-colors"
+                    >
+                      <Icon className="h-4 w-4" />
+                      {link.name}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </div>
 
-        {/* Copyright line with subtle separator */}
-        <div className="relative mt-6 pt-4 text-center">
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-px bg-primary/30" />
-          <p className="text-meta-color text-xs">
-            © {currentYear} Officers Group of Hostels. All rights reserved.
-          </p>
+        {/* Social Icons & Copyright */}
+        <div className="mt-8 pt-6 border-t border-gray-800">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Social Icons */}
+            <div className="flex space-x-3">
+              {socialLinks.map((social) => {
+                const Icon = social.icon;
+                return (
+                  <a
+                    key={social.name}
+                    href={social.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 bg-gray-800 text-gray-400 rounded-full transition-all duration-300 hover:bg-orange-500 hover:text-white hover:scale-110"
+                    aria-label={social.name}
+                  >
+                    <Icon />
+                  </a>
+                );
+              })}
+            </div>
+
+            {/* Copyright */}
+            <div className="text-center">
+              <p className="text-gray-400 text-xs">
+                © {currentYear} Officers Group of Hostels. All rights reserved.
+              </p>
+              <p className="text-gray-500 text-xs mt-1">
+                Designed for students, by professionals
+              </p>
+            </div>
+
+            {/* Contact Badge */}
+            <div className="text-center">
+              <p className="text-xs text-gray-500">
+                Need help? <a href="tel:+923358332755" className="text-orange-500 hover:underline">Call 24/7 Support</a>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Floating Support Button */}
+      {/* Floating Emergency Button */}
       <div className="fixed bottom-6 right-6 z-40">
         <a
           href="tel:+923358332755"
-          className="p-4 bg-primary text-light-color rounded-full shadow-lg hover:shadow-xl hover:bg-primary-dark transition-all duration-300 group flex items-center justify-center"
-          aria-label="24/7 Support"
+          className="group flex items-center gap-2 bg-orange-500 text-white px-4 py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-orange-600 transition-all duration-300"
+          aria-label="24/7 Emergency Support"
         >
-          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
           </svg>
-          <span className="absolute -top-2 -right-2 bg-secondary text-light-color text-xs px-2 py-1 rounded-full">
-            24/7
-          </span>
+          <span className="text-sm font-medium">24/7 Support</span>
         </a>
       </div>
     </footer>

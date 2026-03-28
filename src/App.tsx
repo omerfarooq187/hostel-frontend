@@ -21,6 +21,8 @@ const AdminRouteWrapper = lazy(() => import("./components/AdminRouteWrapper"));
 // Protection components (keep these as normal imports since they're small)
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleRoute from "./components/RoleRoute";
+import PrivacyPolicy from "./pages/public/PrivacyPolicy";
+import TermsOfService from "./pages/public/TermsOfService";
 
 // Loading component for Suspense
 const PageLoader = () => (
@@ -59,6 +61,9 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          // Inside your Router component
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route
             path="/profile"
             element={
