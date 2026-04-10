@@ -10,7 +10,6 @@ import {
   BuildingOfficeIcon,
   LockClosedIcon,
   ExclamationCircleIcon,
-  EnvelopeOpenIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Login() {
@@ -18,9 +17,6 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showResendOption, setShowResendOption] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [resendSuccess, setResendSuccess] = useState(false);
 
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -29,8 +25,6 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setShowResendOption(false);
-    setResendSuccess(false);
 
     try {
       const res = await api.post("/api/auth/login", {
@@ -42,58 +36,16 @@ export default function Login() {
       login(res.data.token, res.data.role);
 
       // redirect by role
-      if (res.data.role === "ADMIN" || res.data.role ==="STAFF") {
+      if (res.data.role === "ADMIN" || res.data.role === "STAFF") {
         navigate("/admin/login");
       } else {
         navigate("/profile");
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Invalid email or password. Please try again.";
-      
-      // Check if error is related to email verification
-      const lowerCaseError = errorMessage.toLowerCase();
-      if (lowerCaseError.includes("verify") || 
-          lowerCaseError.includes("verified") || 
-          lowerCaseError.includes("verification") ||
-          lowerCaseError.includes("email not verified")) {
-        
-        setError("Email verification required. Please verify your email before logging in.");
-        setShowResendOption(true);
-        
-      } else {
-        setError(errorMessage);
-      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResendVerification = async () => {
-    if (!email) {
-      setError("Please enter your email address first.");
-      return;
-    }
-
-    setResending(true);
-    setError("");
-    setResendSuccess(false);
-
-    try {
-      await api.post("/api/auth/resend-verification", { email });
-      setResendSuccess(true);
-      setError("");
-      setShowResendOption(false);
-    } catch (err) {
-      const errorData = err.response?.data;
-      if (errorData && typeof errorData === 'object' && errorData.message) {
-        setError(errorData.message);
-      } else if (typeof errorData === 'string') {
-        setError(errorData);
-      } else {
-        setError("Failed to resend verification email.");
-      }
-    } finally {
-      setResending(false);
     }
   };
 
@@ -103,7 +55,7 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center p-3">
-            <img src={logo} className="h-20 w-20 text-white" />
+            <img src={logo} className="h-20 w-20 text-white" alt="Logo" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Officers Group of Hostels</h1>
           <p className="text-gray-600 mt-1">Management System Login</p>
@@ -119,69 +71,13 @@ export default function Login() {
               Sign in to access your account
             </p>
 
-            {/* Success Message for Resend */}
-            {resendSuccess && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <EnvelopeOpenIcon className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-green-800 font-medium">Verification Email Sent</p>
-                    <p className="text-green-600 text-sm mt-1">
-                      A new verification link has been sent to your email. Please check your inbox and verify your email before logging in.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Error Message */}
             {error && (
-              <div className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${
-                showResendOption ? "bg-orange-50 border border-orange-200" : "bg-red-50 border border-red-200"
-              }`}>
-                <LockClosedIcon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
-                  showResendOption ? "text-orange-600" : "text-red-600"
-                }`} />
-                <div className="flex-1">
-                  <p className={`font-medium ${
-                    showResendOption ? "text-orange-800" : "text-red-800"
-                  }`}>
-                    {showResendOption ? "Verification Required" : "Login Failed"}
-                  </p>
-                  <p className={`text-sm mt-1 ${
-                    showResendOption ? "text-orange-700" : "text-red-600"
-                  }`}>
-                    {error}
-                  </p>
-                  
-                  {/* Resend Verification Option */}
-                  {showResendOption && (
-                    <div className="mt-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <ExclamationCircleIcon className="h-4 w-4 text-orange-600" />
-                        <span className="text-sm text-orange-700">
-                          Didn't receive verification email?
-                        </span>
-                      </div>
-                      <button
-                        onClick={handleResendVerification}
-                        disabled={resending}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-                      >
-                        {resending ? (
-                          <>
-                            <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            <EnvelopeIcon className="h-4 w-4" />
-                            Resend Verification Email
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                <LockClosedIcon className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-red-800 font-medium">Login Failed</p>
+                  <p className="text-red-600 text-sm mt-1">{error}</p>
                 </div>
               </div>
             )}
@@ -203,7 +99,7 @@ export default function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                     required
-                    disabled={loading || resending}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -224,25 +120,15 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                     required
-                    disabled={loading || resending}
+                    disabled={loading}
                   />
                 </div>
-              </div>
-
-              {/* Forgot Password */}
-              <div className="flex justify-end">
-                <Link
-                  to="/forgot-password"
-                  className="text-sm text-orange-600 hover:text-orange-800 transition-colors"
-                >
-                  Forgot password?
-                </Link>
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading || resending}
+                disabled={loading}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-lg font-semibold transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (

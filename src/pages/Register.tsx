@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import {
   UserIcon,
@@ -9,13 +9,12 @@ import {
   BuildingOfficeIcon,
   LockClosedIcon,
   CheckCircleIcon,
-  EnvelopeOpenIcon,
   ExclamationCircleIcon,
-  ArrowPathIcon,
   IdentificationIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Register() {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [cnic, setCnic] = useState("");
@@ -24,15 +23,11 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [verificationSent, setVerificationSent] = useState(false);
-  const [resending, setResending] = useState(false);
 
   // CNIC validation - only numbers, max 13 digits
   const handleCnicChange = (e) => {
     const value = e.target.value;
-    // Allow only digits
     if (value === "" || /^\d+$/.test(value)) {
-      // Limit to 13 digits
       if (value.length <= 13) {
         setCnic(value);
       }
@@ -44,9 +39,7 @@ export default function Register() {
     setLoading(true);
     setError("");
     setSuccess("");
-    setVerificationSent(false);
 
-    // Validation
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       setLoading(false);
@@ -59,7 +52,6 @@ export default function Register() {
       return;
     }
 
-    // CNIC validation
     if (cnic.length !== 13) {
       setError("CNIC must be exactly 13 digits");
       setLoading(false);
@@ -67,7 +59,7 @@ export default function Register() {
     }
 
     try {
-      // Backend returns: { "message": "Account created. Please verify your email" }
+      // Backend now returns: { "message": "Account created successfully" }
       const response = await api.post("/api/auth/signup", { 
         name, 
         email,
@@ -75,11 +67,14 @@ export default function Register() {
         password 
       });
       
-      setVerificationSent(true);
-      setSuccess(response.data?.message || "Verification email sent! Please check your inbox.");
+      setSuccess(response.data?.message || "Account created successfully! You can now log in.");
+      
+      // Automatically redirect to login after 2 seconds
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
       
     } catch (err) {
-      // Handle JSON error response: { "message": "Email already registered" }
       const errorData = err.response?.data;
       if (errorData && typeof errorData === 'object' && errorData.message) {
         setError(errorData.message);
@@ -90,28 +85,6 @@ export default function Register() {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResendVerification = async () => {
-    setResending(true);
-    setError("");
-    
-    try {
-      // Backend returns: { "message": "Verification email resent" }
-      const response = await api.post("/api/auth/resend-verification", { email });
-      setSuccess(response.data?.message || "Verification email resent! Please check your inbox.");
-    } catch (err) {
-      const errorData = err.response?.data;
-      if (errorData && typeof errorData === 'object' && errorData.message) {
-        setError(errorData.message);
-      } else if (typeof errorData === 'string') {
-        setError(errorData);
-      } else {
-        setError("Failed to resend verification email.");
-      }
-    } finally {
-      setResending(false);
     }
   };
 
@@ -130,14 +103,8 @@ export default function Register() {
         {/* Register Card */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {verificationSent ? "Check Your Email" : "Create Account"}
-            </h2>
-            <p className="text-gray-600 mb-6">
-              {verificationSent 
-                ? "We've sent a verification link to your email" 
-                : "Register to request hostel accommodation"}
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h2>
+            <p className="text-gray-600 mb-6">Register to request hostel accommodation</p>
 
             {/* Success Message */}
             {success && (
@@ -147,44 +114,17 @@ export default function Register() {
                   <div className="flex-1">
                     <p className="text-green-800 font-medium">Registration Successful</p>
                     <p className="text-green-600 text-sm mt-1">{success}</p>
-                    
-                    {verificationSent && (
-                      <div className="mt-4 space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-green-700">
-                          <EnvelopeOpenIcon className="h-4 w-4" />
-                          <span>Check your email inbox</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-green-700">
-                          <ExclamationCircleIcon className="h-4 w-4" />
-                          <span>Link expires in 24 hours</span>
-                        </div>
-                        
-                        <div className="mt-4 pt-4 border-t border-green-200">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-green-600">
-                              Didn't receive email?
-                            </span>
-                            <button
-                              onClick={handleResendVerification}
-                              disabled={resending}
-                              className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                            >
-                              {resending ? (
-                                <>
-                                  <ArrowPathIcon className="h-3 w-3 animate-spin" />
-                                  Sending...
-                                </>
-                              ) : (
-                                <>
-                                  <EnvelopeIcon className="h-3 w-3" />
-                                  Resend Email
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    <p className="text-green-600 text-sm mt-2">
+                      Redirecting to login page...
+                    </p>
+                    <div className="mt-4">
+                      <Link
+                        to="/login"
+                        className="inline-flex items-center gap-2 text-sm text-green-700 hover:text-green-800 font-medium"
+                      >
+                        Go to Login <ArrowRightIcon className="h-4 w-4" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -201,7 +141,7 @@ export default function Register() {
               </div>
             )}
 
-            {!verificationSent && (
+            {!success && (
               <form onSubmit={handleRegister} className="space-y-6">
                 {/* Name Field */}
                 <div>
@@ -245,7 +185,7 @@ export default function Register() {
                   </div>
                 </div>
 
-                {/* CNIC Field - Updated with validation */}
+                {/* CNIC Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     CNIC (13 digits)
@@ -323,22 +263,18 @@ export default function Register() {
                   </div>
                 </div>
 
-                {/* Terms Note */}
+                {/* Info Note (updated) */}
                 <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-gray-700 mb-1">Important Notes:</p>
                     <ul className="space-y-2 text-xs text-gray-600">
                       <li className="flex items-start gap-2">
                         <CheckCircleIcon className="h-3 w-3 text-orange-500 mt-0.5 flex-shrink-0" />
-                        <span>You'll receive a verification email immediately</span>
+                        <span>After registration, you can log in immediately</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircleIcon className="h-3 w-3 text-orange-500 mt-0.5 flex-shrink-0" />
-                        <span>Verification link expires in 24 hours</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <CheckCircleIcon className="h-3 w-3 text-orange-500 mt-0.5 flex-shrink-0" />
-                        <span>Account requires admin approval after email verification</span>
+                        <span>Your account may need admin approval before accessing all features</span>
                       </li>
                     </ul>
                   </div>

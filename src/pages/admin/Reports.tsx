@@ -12,6 +12,7 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   UserIcon,
+  DocumentArrowDownIcon, // added for PDF download
 } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import {
@@ -40,6 +41,7 @@ export default function ReportsPage() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [downloadingPdf, setDownloadingPdf] = useState(false); // new state
 
   // Fetch reports
   const fetchReports = async () => {
@@ -69,6 +71,38 @@ export default function ReportsPage() {
   useEffect(() => {
     fetchReports();
   }, [selectedDate]);
+
+  // Download students PDF report
+  const downloadStudentsPdf = async () => {
+    if (!hostelId) return;
+    setDownloadingPdf(true);
+    try {
+      // selectedDate is already in "yyyy-MM" format, pass as month parameter
+      const monthParam = selectedDate; // e.g., "2025-03"
+      const response = await api.get("/api/admin/reports/export/pdf", {
+        params: {
+          hostelId
+        },
+        responseType: "blob", // important for binary data
+      });
+
+      // Create a blob and trigger download
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `students_${selectedDate}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to download PDF", err);
+      alert("Could not download students report. Please try again.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   // Format currency
   const formatCurrency = (value) => {
@@ -129,11 +163,26 @@ export default function ReportsPage() {
               <ArrowPathIcon className="h-5 w-5" />
               Refresh
             </button>
+
+            {/* New button: Download Students PDF */}
+            <button
+              onClick={downloadStudentsPdf}
+              disabled={downloadingPdf}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+              title="Download student list as PDF"
+            >
+              {downloadingPdf ? (
+                <ArrowPathIcon className="h-5 w-5 animate-spin" />
+              ) : (
+                <DocumentArrowDownIcon className="h-5 w-5" />
+              )}
+              Students PDF
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Loading / Error / Content */}
+      {/* Loading / Error / Content (unchanged below) */}
       {loading && !report ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
@@ -150,7 +199,7 @@ export default function ReportsPage() {
         </div>
       ) : report ? (
         <>
-          {/* KPI Cards Grid */}
+          {/* KPI Cards Grid (same as before) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Total Students"
@@ -180,7 +229,7 @@ export default function ReportsPage() {
             />
           </div>
 
-          {/* Second row – financial summary (now 4 cards) */}
+          {/* Second row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-2">
             <StatCard
               title="Salary Expense"
@@ -190,12 +239,31 @@ export default function ReportsPage() {
               subValue="This month"
             />
             <StatCard
+              title="Monthly Consumption Expense"
+              value={formatCurrency(report.consumptionExpense)}
+              icon={BuildingOfficeIcon}
+              color="bg-indigo-600"
+              subValue="This month"
+            />
+            <StatCard
+              title="Other Expense"
+              value={formatCurrency(report.otherExpense || 0)}
+              icon={BuildingOfficeIcon}
+              color="bg-indigo-600"
+              subValue="This month"
+            />
+            <StatCard
               title="Total Expense"
               value={formatCurrency(report.totalExpense)}
               icon={CalculatorIcon}
               color="bg-red-600"
-              subValue="Inventory + Salary"
+              subValue="Inventory + Salary + Other Expense"
             />
+
+          </div>
+
+          {/* Third row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-2">
             <StatCard
               title="Expense Per Head"
               value={formatCurrency(report.expensePerHead)}
@@ -212,20 +280,8 @@ export default function ReportsPage() {
             />
           </div>
 
-          {/* Third row – Other Expense card (single) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-2">
-            <StatCard
-              title="Other Expense"
-              value={formatCurrency(report.otherExpense || 0)}
-              icon={BuildingOfficeIcon}
-              color="bg-indigo-600"
-              subValue="This month"
-            />
-          </div>
-
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            {/* Bar Chart: Income vs Expenses vs Net Profit */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Income & Expense Comparison
@@ -249,7 +305,6 @@ export default function ReportsPage() {
               </ResponsiveContainer>
             </div>
 
-            {/* Pie Chart: Expense Breakdown */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Expense Breakdown
@@ -270,16 +325,15 @@ export default function ReportsPage() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {report &&
-                      [
-                        { name: "Inventory", value: report.totalInventoryExpense },
-                        { name: "Salary", value: report.totalSalaryExpense },
-                        { name: "Other", value: report.otherExpense || 0 },
-                      ]
-                        .filter((item) => item.value > 0)
-                        .map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
+                    {[
+                      { name: "Inventory", value: report.totalInventoryExpense },
+                      { name: "Salary", value: report.totalSalaryExpense },
+                      { name: "Other", value: report.otherExpense || 0 },
+                    ]
+                      .filter((item) => item.value > 0)
+                      .map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
                   </Pie>
                   <Tooltip formatter={(value) => formatCurrency(value)} />
                 </PieChart>

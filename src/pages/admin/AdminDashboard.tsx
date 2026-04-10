@@ -1,4 +1,3 @@
-// src/pages/admin/AdminDashboard.jsx
 import { useEffect, useState, memo } from "react";
 import api from "../../api/axios";
 import { 
@@ -9,7 +8,8 @@ import {
   ArrowPathIcon,
   ExclamationCircleIcon,
   BanknotesIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  CalendarIcon
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 
@@ -20,7 +20,10 @@ export default function AdminDashboard() {
     occupiedBeds: 0,
     totalBeds: 0,
     totalFeeCollection: 0,
-    unpaidFeesCount: 0
+    unpaidFeesCount: 0,
+    totalPaidAmount: 0,
+    totalUnpaidAmount: 0,
+    collectionRate: 0
   });
 
   const [selectedHostel, setSelectedHostel] = useState(null);
@@ -29,19 +32,24 @@ export default function AdminDashboard() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const navigate = useNavigate();
 
-  // Error dialog state
   const [errorDialog, setErrorDialog] = useState({
     show: false,
     title: "",
     message: "",
   });
 
-  // Check if hostel is selected on mount
+  const getCurrentYearMonth = () => {
+    const now = new Date();
+    return {
+      year: now.getFullYear(),
+      month: now.getMonth() + 1
+    };
+  };
+
   useEffect(() => {
     const storedHostel = localStorage.getItem('selectedHostel');
     
     if (!storedHostel || storedHostel === 'null') {
-      // If no hostel selected, redirect to selection
       navigate('/admin/hostel-selection', { replace: true });
     } else {
       try {
@@ -69,46 +77,59 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     let isMounted = true;
-
     const hostelId = localStorage.getItem("selectedHostelId");
-    console.log(hostelId);
+    const { year, month } = getCurrentYearMonth();
+    const currentMonthStr = `${year}-${String(month).padStart(2, '0')}`;
 
     try {
-      const [roomsRes, studentsRes, allocationsRes, feeCollectionRes, unpaidFeesRes] = await Promise.all([
-        api.get("/api/admin/rooms", {
-          params: {hostelId}
-        }),
-        api.get("/api/admin/students", {
-          params: {hostelId}
-        }),
-        api.get("/api/admin/allocations", {
-          params: {hostelId}
-        }),
-        api.get("/api/admin/fee/total/collection", {
-          params: {hostelId}
-        }),
-        api.get("/api/admin/fee/total/unpaid", {
-          params: {hostelId}
-        })
+      const [roomsRes, studentsRes, allocationsRes, feesRes] = await Promise.all([
+        api.get("/api/admin/rooms", { params: { hostelId } }),
+        api.get("/api/admin/students", { params: { hostelId } }),
+        api.get("/api/admin/allocations", { params: { hostelId } }),
+        api.get("/api/admin/fee", { params: { hostelId } })
       ]);
 
       if (!isMounted) return;
 
-
-      // Calculate total beds from rooms
       const totalBeds = roomsRes.data.reduce((sum, room) => sum + room.capacity, 0);
       
-      // Calculate unpaid fees count
-      const unpaidFeesCount = unpaidFeesRes.data || 0;
-
+      // Filter fees for current month
+      const currentMonthFees = feesRes.data.filter(fee => fee.month === currentMonthStr);
       
+      // Calculate total collected = sum of all paid_amount
+      const totalCollected = currentMonthFees.reduce((sum, fee) => sum + (fee.paidAmount || 0), 0);
+      
+      // Calculate total expected amount
+      const totalExpected = currentMonthFees.reduce((sum, fee) => sum + fee.amount, 0);
+      
+      // Calculate total unpaid amount = sum of remaining amounts for ALL fees (PAID, PARTIAL, UNPAID)
+      // This is the correct way - any fee where remaining > 0 contributes to unpaid amount
+      const totalUnpaidAmount = currentMonthFees.reduce((sum, fee) => {
+        const paid = fee.paidAmount || 0;
+        const remaining = fee.amount - paid;
+        return sum + (remaining > 0 ? remaining : 0);
+      }, 0);
+      
+      // Count unpaid fees - any fee with remaining amount > 0 (includes PARTIAL and UNPAID)
+      const unpaidCount = currentMonthFees.filter(fee => {
+        const paid = fee.paidAmount || 0;
+        const remaining = fee.amount - paid;
+        return remaining > 0; // Count if any amount is still due
+      }).length;
+      
+      // Calculate collection rate
+      const collectionRate = totalExpected > 0 ? (totalCollected / totalExpected) * 100 : 0;
+
       setStats({
         rooms: roomsRes.data.length,
         students: studentsRes.data.length,
         occupiedBeds: allocationsRes.data,
         totalBeds: totalBeds,
-        totalFeeCollection: feeCollectionRes.data || 0,
-        unpaidFeesCount: unpaidFeesCount
+        totalFeeCollection: totalCollected,
+        unpaidFeesCount: unpaidCount,
+        totalPaidAmount: totalCollected,
+        totalUnpaidAmount: totalUnpaidAmount,
+        collectionRate: collectionRate
       });
       
       setLastUpdated(new Date());
@@ -122,23 +143,17 @@ export default function AdminDashboard() {
       if (isMounted) setLoading(false);
     }
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   };
 
-  // Calculate accurate metrics
   const occupancyRate = stats.totalBeds > 0 
     ? Math.round((stats.occupiedBeds / stats.totalBeds) * 100) 
     : 0;
-
   const occupancyStatus = stats.totalBeds > 0 
-  ? (stats.occupiedBeds / stats.totalBeds * 100).toFixed(1) 
-  : "0.0";
-  
+    ? (stats.occupiedBeds / stats.totalBeds * 100).toFixed(1) 
+    : "0.0";
   const availableBeds = Math.max(0, stats.totalBeds - stats.occupiedBeds);
 
-  // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-PK', {
       style: 'currency',
@@ -158,6 +173,34 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      {errorDialog.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-500/20 rounded-lg">
+                  <ExclamationCircleIcon className="h-6 w-6 text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-white">{errorDialog.title}</h2>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="mb-6">
+                <p className="text-gray-700">{errorDialog.message}</p>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={closeErrorDialog}
+                  className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-medium transition-all duration-300 hover:shadow-lg"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -182,7 +225,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Stats Grid - Updated to 6 cards */}
+      {/* Stats Grid - 6 cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         <StatCard 
           title="Total Rooms" 
@@ -216,22 +259,20 @@ export default function AdminDashboard() {
           description={`${availableBeds} beds available`}
           trend={`${occupancyStatus}% filled`}
         />
-        {/* New Fee Collection Card */}
         <StatCard 
           title="Fee Collection" 
           value={formatCurrency(stats.totalFeeCollection)} 
           icon={BanknotesIcon}
           color="emerald"
-          description="Total fees collected"
-          trend="Total revenue"
+          description="Fees collected this month"
+          trend="Current month"
         />
-        {/* New Unpaid Fees Card */}
         <StatCard 
-          title="Unpaid Fees" 
-          value={stats.unpaidFeesCount} 
+          title="Unpaid Amount" 
+          value={formatCurrency(stats.totalUnpaidAmount)} 
           icon={ExclamationTriangleIcon}
           color="red"
-          description="Pending fee payments"
+          description="Total pending amount"
           trend={stats.unpaidFeesCount > 0 ? "Action needed" : "All clear"}
         />
       </div>
@@ -266,12 +307,15 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Fee Collection Card */}
+        {/* Fee Collection Card - Updated with partial payment support */}
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-bold text-gray-900">Fee Collection</h3>
-              <p className="text-gray-600 text-sm">Financial overview</p>
+              <p className="text-gray-600 text-sm flex items-center gap-1">
+                <CalendarIcon className="h-3 w-3" />
+                This month
+              </p>
             </div>
             <div className="p-3 bg-emerald-100 rounded-xl">
               <BanknotesIcon className="h-6 w-6 text-emerald-600" />
@@ -281,36 +325,44 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             <div>
               <div className="flex justify-between items-center mb-1">
-                <span className="text-gray-700 text-sm">Total Collected</span>
+                <span className="text-gray-700 text-sm">Collected</span>
                 <span className="font-bold text-emerald-700">
                   {formatCurrency(stats.totalFeeCollection)}
                 </span>
               </div>
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-emerald-500"
-                  style={{ width: '100%' }}
+                  className="h-full bg-emerald-500 transition-all duration-500" 
+                  style={{ width: `${Math.min(100, stats.collectionRate)}%` }}
                 />
               </div>
             </div>
             
             <div>
               <div className="flex justify-between items-center mb-1">
-                <span className="text-gray-700 text-sm">Unpaid Cases</span>
-                <span className={`font-bold ${
-                  stats.unpaidFeesCount > 0 ? 'text-red-600' : 'text-green-600'
-                }`}>
-                  {stats.unpaidFeesCount}
+                <span className="text-gray-700 text-sm">Pending Amount</span>
+                <span className="font-bold text-red-600">
+                  {formatCurrency(stats.totalUnpaidAmount)}
                 </span>
               </div>
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div 
-                  className={`h-full ${
-                    stats.unpaidFeesCount > 0 ? 'bg-red-500' : 'bg-green-500'
-                  }`}
-                  style={{ width: `${Math.min(100, stats.unpaidFeesCount * 10)}%` }}
+                  className="h-full bg-red-500 transition-all duration-500" 
+                  style={{ width: `${Math.min(100, 100 - stats.collectionRate)}%` }}
                 />
               </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-sm text-gray-600">Collection Rate</span>
+              <span className="text-sm font-bold text-emerald-700">{stats.collectionRate.toFixed(1)}%</span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Pending Cases</span>
+              <span className={`text-sm font-bold ${stats.unpaidFeesCount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {stats.unpaidFeesCount}
+              </span>
             </div>
           </div>
         </div>
@@ -324,10 +376,12 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-bold text-gray-900">
-                {stats.unpaidFeesCount > 0 ? 'Unpaid Alerts' : 'All Clear'}
+                {stats.unpaidFeesCount > 0 ? 'Payment Alerts' : 'All Clear'}
               </h3>
               <p className="text-gray-600 text-sm">
-                {stats.unpaidFeesCount > 0 ? 'Pending fee payments' : 'No unpaid fees'}
+                {stats.unpaidFeesCount > 0 
+                  ? `${stats.unpaidFeesCount} student${stats.unpaidFeesCount !== 1 ? 's' : ''} have pending payments` 
+                  : 'No pending payments this month'}
               </p>
             </div>
             <div className={`p-3 rounded-xl ${
@@ -346,23 +400,29 @@ export default function AdminDashboard() {
                   <div>
                     <p className="font-medium text-gray-900">Action Required</p>
                     <p className="text-sm text-gray-600">
-                      {stats.unpaidFeesCount} {stats.unpaidFeesCount === 1 ? 'payment' : 'payments'} unpaid
+                      {stats.unpaidFeesCount} {stats.unpaidFeesCount === 1 ? 'student' : 'students'} have pending payments
+                    </p>
+                    <p className="text-xs text-red-600 mt-1">
+                      Total pending: {formatCurrency(stats.totalUnpaidAmount)}
                     </p>
                   </div>
                   <span className="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
-                    Critical
+                    {stats.collectionRate < 50 ? 'Critical' : stats.collectionRate < 80 ? 'Warning' : 'Pending'}
                   </span>
                 </div>
               </div>
-              <button className="w-full px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
-                View Unpaid Fees
+              <button 
+                onClick={() => navigate('/admin/fees')}
+                className="w-full px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+              >
+                View Pending Payments
               </button>
             </div>
           ) : (
             <div className="text-center py-4">
               <div className="text-4xl mb-4">🎉</div>
               <p className="text-gray-700 font-medium">All fees are up to date</p>
-              <p className="text-sm text-gray-600 mt-1">No unpaid payments</p>
+              <p className="text-sm text-gray-600 mt-1">No pending payments for this month</p>
             </div>
           )}
         </div>
@@ -392,91 +452,31 @@ export default function AdminDashboard() {
             <div className="text-2xl font-bold text-gray-900">
               {formatCurrency(stats.totalFeeCollection)}
             </div>
-            <div className="text-sm text-gray-600">Fee Collection</div>
+            <div className="text-sm text-gray-600">Collected</div>
+            <div className="text-xs text-gray-400">This month</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className={`text-2xl font-bold ${
-              stats.unpaidFeesCount > 0 ? 'text-red-600' : 'text-green-600'
-            }`}>
-              {stats.unpaidFeesCount}
+            <div className="text-2xl font-bold text-red-600">
+              {formatCurrency(stats.totalUnpaidAmount)}
             </div>
-            <div className="text-sm text-gray-600">Unpaid Fees</div>
+            <div className="text-sm text-gray-600">Pending Amount</div>
+            <div className="text-xs text-gray-400">This month</div>
           </div>
         </div>
       </div>
-
-      {/* Error Dialog */}
-      {errorDialog.show && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-500/20 rounded-lg">
-                  <ExclamationCircleIcon className="h-6 w-6 text-white" />
-                </div>
-                <h2 className="text-xl font-bold text-white">{errorDialog.title}</h2>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              <div className="mb-6">
-                <p className="text-gray-700">{errorDialog.message}</p>
-              </div>
-              
-              <div className="flex justify-end">
-                <button
-                  onClick={closeErrorDialog}
-                  className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-medium transition-all duration-300 hover:shadow-lg"
-                >
-                  OK
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
+// StatCard component
 const StatCard = memo(function StatCard({ title, value, icon: Icon, color, description, trend }) {
   const colorClasses = {
-    blue: { 
-      bg: 'bg-blue-50', 
-      iconBg: 'bg-blue-100', 
-      iconColor: 'text-blue-600',
-      border: 'border-blue-200',
-    },
-    green: { 
-      bg: 'bg-green-50', 
-      iconBg: 'bg-green-100', 
-      iconColor: 'text-green-600',
-      border: 'border-green-200',
-    },
-    purple: { 
-      bg: 'bg-purple-50', 
-      iconBg: 'bg-purple-100', 
-      iconColor: 'text-purple-600',
-      border: 'border-purple-200',
-    },
-    orange: { 
-      bg: 'bg-orange-50', 
-      iconBg: 'bg-orange-100', 
-      iconColor: 'text-orange-600',
-      border: 'border-orange-200',
-    },
-    emerald: { 
-      bg: 'bg-emerald-50', 
-      iconBg: 'bg-emerald-100', 
-      iconColor: 'text-emerald-600',
-      border: 'border-emerald-200',
-    },
-    red: { 
-      bg: 'bg-red-50', 
-      iconBg: 'bg-red-100', 
-      iconColor: 'text-red-600',
-      border: 'border-red-200',
-    },
+    blue: { bg: 'bg-blue-50', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', border: 'border-blue-200' },
+    green: { bg: 'bg-green-50', iconBg: 'bg-green-100', iconColor: 'text-green-600', border: 'border-green-200' },
+    purple: { bg: 'bg-purple-50', iconBg: 'bg-purple-100', iconColor: 'text-purple-600', border: 'border-purple-200' },
+    orange: { bg: 'bg-orange-50', iconBg: 'bg-orange-100', iconColor: 'text-orange-600', border: 'border-orange-200' },
+    emerald: { bg: 'bg-emerald-50', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', border: 'border-emerald-200' },
+    red: { bg: 'bg-red-50', iconBg: 'bg-red-100', iconColor: 'text-red-600', border: 'border-red-200' },
   };
 
   return (
@@ -490,13 +490,10 @@ const StatCard = memo(function StatCard({ title, value, icon: Icon, color, descr
           <Icon className={`w-6 h-6 ${colorClasses[color].iconColor}`} />
         </div>
       </div>
-      
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">{description}</p>
         {trend && (
-          <span className={`text-sm font-medium ${
-            color === 'red' ? 'text-red-700' : 'text-gray-700'
-          }`}>
+          <span className={`text-sm font-medium ${color === 'red' ? 'text-red-700' : 'text-gray-700'}`}>
             {trend}
           </span>
         )}
@@ -505,10 +502,10 @@ const StatCard = memo(function StatCard({ title, value, icon: Icon, color, descr
   );
 });
 
+// DashboardSkeleton component
 function DashboardSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
-      {/* Header Skeleton */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-2">
           <div className="h-10 w-64 bg-gray-200 rounded-lg"></div>
@@ -516,10 +513,8 @@ function DashboardSkeleton() {
         </div>
         <div className="h-10 w-40 bg-gray-200 rounded-lg"></div>
       </div>
-
-      {/* Stats Grid Skeleton - Updated to 6 cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        {[1, 2, 3, 4, 5, 6].map(i => (
+        {[1,2,3,4,5,6].map(i => (
           <div key={i} className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="space-y-2">
@@ -535,10 +530,8 @@ function DashboardSkeleton() {
           </div>
         ))}
       </div>
-
-      {/* Summary Cards Skeleton */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {[1, 2, 3].map(i => (
+        {[1,2,3].map(i => (
           <div key={i} className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
             <div className="h-6 w-32 bg-gray-300 rounded mb-4"></div>
             <div className="space-y-3">
@@ -549,12 +542,10 @@ function DashboardSkeleton() {
           </div>
         ))}
       </div>
-
-      {/* System Status Skeleton */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6">
         <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-          {[1, 2, 3, 4, 5, 6].map(i => (
+          {[1,2,3,4,5,6].map(i => (
             <div key={i} className="bg-gray-100 rounded-lg p-4">
               <div className="h-8 w-16 bg-gray-300 rounded mx-auto mb-2"></div>
               <div className="h-4 w-20 bg-gray-300 rounded mx-auto"></div>
