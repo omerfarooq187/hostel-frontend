@@ -74,6 +74,7 @@ export default function AdminLayout() {
       { name: 'History', to: '/admin/allocations/history', icon: ClockIcon },
       { name: 'Fees', to: '/admin/fees', icon: CurrencyRupeeIcon },
       { name: 'Inventory', to: '/admin/inventory', icon: KitchenInventoryIcon },
+        { name: 'Gallery', to: '/admin/gallery', icon: DocumentTextIcon },
     ];
 
     if (role === 'ADMIN') {

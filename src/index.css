@@ -1,1 +1,149 @@
 @import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Design tokens
+   Tailwind v4 reads its theme from CSS, not tailwind.config.js, so every token
+   the app relies on has to live here.
+   --------------------------------------------------------------------------- */
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+
+  /* Brand — warm orange */
+  --color-brand-50: #fff7ed;
+  --color-brand-100: #ffedd5;
+  --color-brand-200: #fed7aa;
+  --color-brand-300: #fdba74;
+  --color-brand-400: #fb923c;
+  --color-brand-500: #f97316;
+  --color-brand-600: #ea580c;
+  --color-brand-700: #c2410c;
+
+  /* Ink — the near-black plum used across the brand */
+  --color-ink-700: #2a0f1b;
+  --color-ink-800: #1c0810;
+  --color-ink-900: #0f0106;
+
+  --shadow-card: 0 20px 50px -25px rgb(15 1 6 / 0.25);
+  --shadow-card-hover: 0 30px 70px -24px rgb(249 115 22 / 0.32);
+  --shadow-panel: 0 30px 80px -30px rgb(15 1 6 / 0.4);
+
+  --animate-fade-in-up: fade-in-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-float: float 4s ease-in-out infinite;
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: #4c4c4c;
+    background-color: #ffffff;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--color-ink-900);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  /* Keep in-page anchors clear of the fixed navbar */
+  section[id],
+  [data-anchor] {
+    scroll-margin-top: 6rem;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* The 1260px measure the brand was designed around. */
+@utility container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1260px;
+  padding-inline: 1rem;
+}
+
+/* Clears the fixed navbar (h-16 mobile / h-20 from md up). */
+.hero-offset {
+  padding-top: 4rem;
+}
+
+@media (min-width: 768px) {
+  .hero-offset {
+    padding-top: 5rem;
+  }
+}
+
+/* Scroll-triggered reveal, driven by the <Reveal> component. */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.reveal[data-visible="true"] {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal,
+  .reveal[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

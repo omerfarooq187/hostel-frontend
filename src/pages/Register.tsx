@@ -1,17 +1,69 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import AuthShell from "../components/auth/AuthShell";
+import { Alert, Field, SubmitButton } from "../components/auth/FormControls";
 import {
-  UserIcon,
-  EnvelopeIcon,
-  KeyIcon,
   ArrowRightIcon,
-  BuildingOfficeIcon,
-  LockClosedIcon,
+  BuildingOffice2Icon,
   CheckCircleIcon,
-  ExclamationCircleIcon,
+  ClockIcon,
+  EnvelopeIcon,
   IdentificationIcon,
+  LockClosedIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
+
+const HIGHLIGHTS = [
+  {
+    icon: BuildingOffice2Icon,
+    title: "Two premium branches",
+    description: "Mandra and Islamabad, both built around study, comfort, and security.",
+  },
+  {
+    icon: ClockIcon,
+    title: "Apply in under a minute",
+    description: "One short form is all it takes to start your accommodation request.",
+  },
+  {
+    icon: CheckCircleIcon,
+    title: "Track every step",
+    description: "Follow your request from submission to room allocation in the portal.",
+  },
+];
+
+const STATS = [
+  { value: "350+", label: "Residents" },
+  { value: "99.8%", label: "Satisfaction" },
+  { value: "24/7", label: "Security" },
+];
+
+const PASSWORD_MIN_LENGTH = 6;
+
+/** Formats 13 raw digits as the familiar XXXXX-XXXXXXX-X CNIC layout. */
+function formatCnic(digits: string) {
+  const parts = [digits.slice(0, 5), digits.slice(5, 12), digits.slice(12, 13)];
+  return parts.filter(Boolean).join("-");
+}
+
+/** Coarse 0–4 score used only to give the user directional feedback. */
+function scorePassword(password: string) {
+  if (!password) return 0;
+  let score = 0;
+  if (password.length >= PASSWORD_MIN_LENGTH) score += 1;
+  if (password.length >= 10) score += 1;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1;
+  if (/\d/.test(password) && /[^A-Za-z0-9]/.test(password)) score += 1;
+  return score;
+}
+
+const STRENGTH_META = [
+  { label: "Too short", bar: "bg-gray-200", text: "text-gray-500" },
+  { label: "Weak", bar: "bg-red-500", text: "text-red-600" },
+  { label: "Fair", bar: "bg-amber-500", text: "text-amber-600" },
+  { label: "Good", bar: "bg-lime-500", text: "text-lime-600" },
+  { label: "Strong", bar: "bg-emerald-500", text: "text-emerald-600" },
+];
 
 export default function Register() {
   const navigate = useNavigate();
@@ -20,65 +72,101 @@ export default function Register() {
   const [cnic, setCnic] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // CNIC validation - only numbers, max 13 digits
+  const strength = useMemo(() => scorePassword(password), [password]);
+
+  // Inline validation — only surfaced once a field has been visited.
+  const fieldErrors = {
+    name: name.trim().length > 0 && name.trim().length < 3 ? "Please enter your full name." : "",
+    email:
+      email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+        ? "Enter a valid email address."
+        : "",
+    cnic: cnic.length > 0 && cnic.length < 13 ? "CNIC must be exactly 13 digits." : "",
+    password:
+      password.length > 0 && password.length < PASSWORD_MIN_LENGTH
+        ? `Use at least ${PASSWORD_MIN_LENGTH} characters.`
+        : "",
+    confirmPassword:
+      confirmPassword.length > 0 && confirmPassword !== password
+        ? "Passwords do not match."
+        : "",
+  };
+
+  const errorFor = (field: keyof typeof fieldErrors) =>
+    touched[field] ? fieldErrors[field] : "";
+
+  const markTouched = (field: string) =>
+    setTouched((previous) => ({ ...previous, [field]: true }));
+
+  const isComplete =
+    name.trim().length >= 3 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+    cnic.length === 13 &&
+    password.length >= PASSWORD_MIN_LENGTH &&
+    confirmPassword === password;
+
+  // CNIC input accepts digits only, capped at 13.
   const handleCnicChange = (e) => {
-    const value = e.target.value;
-    if (value === "" || /^\d+$/.test(value)) {
-      if (value.length <= 13) {
-        setCnic(value);
-      }
-    }
+    setCnic(e.target.value.replace(/\D/g, "").slice(0, 13));
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
     setSuccess("");
 
+    setTouched({
+      name: true,
+      email: true,
+      cnic: true,
+      password: true,
+      confirmPassword: true,
+    });
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
-      setLoading(false);
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      setLoading(false);
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters long`);
       return;
     }
 
     if (cnic.length !== 13) {
       setError("CNIC must be exactly 13 digits");
-      setLoading(false);
       return;
     }
 
+    setLoading(true);
+
     try {
-      // Backend now returns: { "message": "Account created successfully" }
-      const response = await api.post("/api/auth/signup", { 
-        name, 
-        email,
+      // Backend returns: { "message": "Account created successfully" }
+      const response = await api.post("/api/auth/signup", {
+        name: name.trim(),
+        email: email.trim(),
         cnic,
-        password 
+        password,
       });
-      
-      setSuccess(response.data?.message || "Account created successfully! You can now log in.");
-      
+
+      setSuccess(
+        response.data?.message || "Account created successfully! You can now log in."
+      );
+
       // Automatically redirect to login after 2 seconds
       setTimeout(() => {
         navigate("/login");
       }, 2000);
-      
     } catch (err) {
       const errorData = err.response?.data;
-      if (errorData && typeof errorData === 'object' && errorData.message) {
+      if (errorData && typeof errorData === "object" && errorData.message) {
         setError(errorData.message);
-      } else if (typeof errorData === 'string') {
+      } else if (typeof errorData === "string") {
         setError(errorData);
       } else {
         setError("Registration failed. Please try again.");
@@ -89,240 +177,208 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-gray-100 p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-orange-600 to-orange-700 rounded-2xl mb-4">
-            <BuildingOfficeIcon className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Join Officers Group of Hostels</h1>
-          <p className="text-gray-600 mt-1">Create your account</p>
-        </div>
-
-        {/* Register Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h2>
-            <p className="text-gray-600 mb-6">Register to request hostel accommodation</p>
-
-            {/* Success Message */}
-            {success && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <CheckCircleIcon className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-green-800 font-medium">Registration Successful</p>
-                    <p className="text-green-600 text-sm mt-1">{success}</p>
-                    <p className="text-green-600 text-sm mt-2">
-                      Redirecting to login page...
-                    </p>
-                    <div className="mt-4">
-                      <Link
-                        to="/login"
-                        className="inline-flex items-center gap-2 text-sm text-green-700 hover:text-green-800 font-medium"
-                      >
-                        Go to Login <ArrowRightIcon className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Error Message */}
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-                <LockClosedIcon className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-red-800 font-medium">Registration Failed</p>
-                  <p className="text-red-600 text-sm mt-1">{error}</p>
-                </div>
-              </div>
-            )}
-
-            {!success && (
-              <form onSubmit={handleRegister} className="space-y-6">
-                {/* Name Field */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                      <UserIcon className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                {/* Email Field */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                      <EnvelopeIcon className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                {/* CNIC Field */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    CNIC (13 digits)
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                      <IdentificationIcon className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Enter your CNIC"
-                      value={cnic}
-                      onChange={handleCnicChange}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                      required
-                      disabled={loading}
-                      maxLength={13}
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <p className="text-xs text-gray-500">
-                      Enter 13 digits without dashes
-                    </p>
-                    <p className={`text-xs ${cnic.length === 13 ? 'text-green-600' : 'text-orange-600'}`}>
-                      {cnic.length}/13 digits
-                    </p>
-                  </div>
-                </div>
-
-                {/* Password Field */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                      <KeyIcon className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                      required
-                      minLength="6"
-                      disabled={loading}
-                    />
-                  </div>
-                  <p className="mt-2 text-xs text-gray-500">
-                    Password must be at least 6 characters long
-                  </p>
-                </div>
-
-                {/* Confirm Password Field */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                      <KeyIcon className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="password"
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                      required
-                      minLength="6"
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                {/* Info Note (updated) */}
-                <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Important Notes:</p>
-                    <ul className="space-y-2 text-xs text-gray-600">
-                      <li className="flex items-start gap-2">
-                        <CheckCircleIcon className="h-3 w-3 text-orange-500 mt-0.5 flex-shrink-0" />
-                        <span>After registration, you can log in immediately</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <CheckCircleIcon className="h-3 w-3 text-orange-500 mt-0.5 flex-shrink-0" />
-                        <span>Your account may need admin approval before accessing all features</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-lg font-semibold transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Creating Account...
-                    </>
-                  ) : (
-                    <>
-                      Register Account
-                      <ArrowRightIcon className="h-5 w-5" />
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-
-            {/* Divider */}
-            <div className="mt-8 pt-6 border-t border-gray-100">
-              <p className="text-center text-gray-600">
-                Already have an account?{" "}
-                <Link
-                  to="/login"
-                  className="text-orange-600 hover:text-orange-800 font-medium transition-colors"
-                >
-                  Sign In
-                </Link>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer Note */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">
-            © {new Date().getFullYear()} Officers Group of Hostels
-          </p>
-        </div>
+    <AuthShell
+      eyebrow="Create account"
+      heading="Start your application for a room."
+      description="Register once, then apply, track your request, and manage your stay from a single dashboard."
+      highlights={HIGHLIGHTS}
+      stats={STATS}
+    >
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-ink-900 sm:text-3xl">Create your account</h1>
+        <p className="mt-2 text-[15px] text-gray-600">
+          Register to request hostel accommodation.
+        </p>
       </div>
-    </div>
+
+      {success && (
+        <Alert tone="success" title="Registration successful">
+          <p>{success}</p>
+          <p className="mt-1">Taking you to the sign-in page…</p>
+          <Link
+            to="/login"
+            className="mt-3 inline-flex items-center gap-1.5 font-semibold text-emerald-800 hover:text-emerald-900"
+          >
+            Go to sign in
+            <ArrowRightIcon className="h-4 w-4" />
+          </Link>
+        </Alert>
+      )}
+
+      {error && (
+        <Alert tone="error" title="We couldn't create your account">
+          {error}
+        </Alert>
+      )}
+
+      {!success && (
+        <form onSubmit={handleRegister} className="space-y-5" noValidate>
+          <Field
+            label="Full name"
+            icon={UserIcon}
+            name="name"
+            autoComplete="name"
+            placeholder="e.g. Hamza Ahmed"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => markTouched("name")}
+            error={errorFor("name")}
+            required
+            disabled={loading}
+          />
+
+          <Field
+            label="Email address"
+            icon={EnvelopeIcon}
+            type="email"
+            name="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => markTouched("email")}
+            error={errorFor("email")}
+            required
+            disabled={loading}
+          />
+
+          <Field
+            label="CNIC number"
+            icon={IdentificationIcon}
+            name="cnic"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="35202-1234567-1"
+            value={formatCnic(cnic)}
+            onChange={handleCnicChange}
+            onBlur={() => markTouched("cnic")}
+            error={errorFor("cnic")}
+            hint="13 digits, dashes added automatically."
+            required
+            disabled={loading}
+            trailing={
+              <span
+                className={`px-2 text-xs font-semibold tabular-nums ${
+                  cnic.length === 13 ? "text-emerald-600" : "text-gray-400"
+                }`}
+              >
+                {cnic.length}/13
+              </span>
+            }
+          />
+
+          <div>
+            <Field
+              label="Password"
+              icon={LockClosedIcon}
+              name="password"
+              autoComplete="new-password"
+              placeholder="Create a password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onBlur={() => markTouched("password")}
+              error={errorFor("password")}
+              hint={`At least ${PASSWORD_MIN_LENGTH} characters. Mix letters, numbers, and symbols.`}
+              required
+              disabled={loading}
+              revealable
+            />
+
+            {password.length > 0 && (
+              <div className="mt-3 flex items-center gap-3">
+                <div className="flex flex-1 gap-1.5" aria-hidden="true">
+                  {[1, 2, 3, 4].map((step) => (
+                    <span
+                      key={step}
+                      className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+                        step <= strength ? STRENGTH_META[strength].bar : "bg-gray-200"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span
+                  aria-live="polite"
+                  className={`w-16 text-right text-xs font-semibold ${STRENGTH_META[strength].text}`}
+                >
+                  {STRENGTH_META[strength].label}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <Field
+            label="Confirm password"
+            icon={LockClosedIcon}
+            name="confirmPassword"
+            autoComplete="new-password"
+            placeholder="Re-enter your password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            onBlur={() => markTouched("confirmPassword")}
+            error={errorFor("confirmPassword")}
+            required
+            disabled={loading}
+            revealable
+            trailing={
+              confirmPassword.length > 0 && confirmPassword === password ? (
+                <CheckCircleIcon
+                  className="h-5 w-5 text-emerald-500"
+                  aria-label="Passwords match"
+                />
+              ) : null
+            }
+          />
+
+          <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+            <p className="text-sm font-semibold text-ink-900">Before you continue</p>
+            <ul className="mt-2 space-y-1.5">
+              {[
+                "You can sign in as soon as your account is created.",
+                "An admin approves your request before room allocation.",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2 text-xs leading-5 text-gray-600">
+                  <CheckCircleIcon
+                    className="mt-0.5 h-3.5 w-3.5 flex-none text-brand-500"
+                    aria-hidden="true"
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <SubmitButton
+            loading={loading}
+            loadingLabel="Creating account..."
+            disabled={!isComplete}
+          >
+            Create account
+            <ArrowRightIcon className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+          </SubmitButton>
+
+          <p className="text-center text-xs leading-5 text-gray-500">
+            By creating an account you agree to our{" "}
+            <Link to="/terms" className="font-medium text-brand-600 hover:text-brand-700">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link to="/privacy" className="font-medium text-brand-600 hover:text-brand-700">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        </form>
+      )}
+
+      <p className="mt-6 text-center text-[15px] text-gray-600">
+        Already have an account?{" "}
+        <Link
+          to="/login"
+          className="font-semibold text-brand-600 transition-colors hover:text-brand-700"
+        >
+          Sign in
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

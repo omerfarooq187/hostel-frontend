@@ -551,19 +551,19 @@ export default function Profile() {
   // Show admin/staff message
   if (role === 'ADMIN' || role === 'STAFF') {
     return (
-      <div className="min-h-screen bg-gray-50 font-sans pt-24">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white font-sans pt-24">
         {/* Profile Header */}
-        <div className="bg-gradient-to-r from-[#F97316] to-[#EA580C]">
+        <div className="bg-gradient-to-r from-[#0F0106] via-[#1a0b10] to-[#2a0f1b] shadow-xl">
           <div className="container mx-auto px-4 py-8 sm:py-12">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl">
-                <ShieldCheckIcon className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
+              <div className="p-2 sm:p-3 bg-[#F97316]/20 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-[#F97316]/30">
+                <ShieldCheckIcon className="h-8 w-8 sm:h-12 sm:w-12 text-[#F97316]" />
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-white break-words">
                   Admin Dashboard
                 </h1>
-                <p className="text-white/90 text-sm sm:text-base mt-1">
+                <p className="text-white/80 text-sm sm:text-base mt-1">
                   You are logged in as {role === 'ADMIN' ? 'Administrator' : 'Staff Member'}
                 </p>
               </div>
@@ -574,9 +574,9 @@ export default function Profile() {
         {/* Admin Message Card */}
         <div className="container mx-auto px-4 -mt-8 pb-12">
           <div className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 animate-fade-in-up">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 animate-fade-in-up hover:shadow-xl transition-shadow duration-300">
               <div className="flex flex-col items-center text-center">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-orange-100 rounded-full mb-6">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-[#F97316]/10 rounded-full mb-6 border-2 border-[#F97316]/20">
                   <BuildingOfficeIcon className="h-10 w-10 text-[#F97316]" />
                 </div>
                 
@@ -590,15 +590,15 @@ export default function Profile() {
                   to manage students, fees, and allocations.
                 </p>
 
-                <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 mb-8 w-full">
+                <div className="bg-gradient-to-br from-[#F97316]/5 to-[#F97316]/10 border border-[#F97316]/20 rounded-xl p-6 mb-8 w-full">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Link
                       to="/admin/dashboard"
-                      className="flex items-center gap-3 p-4 bg-white rounded-lg hover:shadow-md transition-shadow group"
+                      className="flex items-center gap-3 p-4 bg-white rounded-lg hover:shadow-md hover:border-[#F97316]/30 transition-all duration-300 group border border-gray-200"
                     >
-                      <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                      <div className="p-2 bg-[#F97316]/10 rounded-lg group-hover:bg-[#F97316]/20 transition-colors">
                         <BuildingOfficeIcon className="h-6 w-6 text-[#F97316]" />
                       </div>
                       <div className="text-left">
@@ -610,9 +610,9 @@ export default function Profile() {
 
                     <Link
                       to="/admin/students"
-                      className="flex items-center gap-3 p-4 bg-white rounded-lg hover:shadow-md transition-shadow group"
+                      className="flex items-center gap-3 p-4 bg-white rounded-lg hover:shadow-md hover:border-[#F97316]/30 transition-all duration-300 group border border-gray-200"
                     >
-                      <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                      <div className="p-2 bg-[#F97316]/10 rounded-lg group-hover:bg-[#F97316]/20 transition-colors">
                         <UserGroupIcon className="h-6 w-6 text-[#F97316]" />
                       </div>
                       <div className="text-left">
@@ -624,9 +624,9 @@ export default function Profile() {
 
                     <Link
                       to="/admin/allocations"
-                      className="flex items-center gap-3 p-4 bg-white rounded-lg hover:shadow-md transition-shadow group"
+                      className="flex items-center gap-3 p-4 bg-white rounded-lg hover:shadow-md hover:border-[#F97316]/30 transition-all duration-300 group border border-gray-200"
                     >
-                      <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                      <div className="p-2 bg-[#F97316]/10 rounded-lg group-hover:bg-[#F97316]/20 transition-colors">
                         <HomeIcon className="h-6 w-6 text-[#F97316]" />
                       </div>
                       <div className="text-left">
@@ -638,9 +638,9 @@ export default function Profile() {
 
                     <Link
                       to="/admin/fees"
-                      className="flex items-center gap-3 p-4 bg-white rounded-lg hover:shadow-md transition-shadow group"
+                      className="flex items-center gap-3 p-4 bg-white rounded-lg hover:shadow-md hover:border-[#F97316]/30 transition-all duration-300 group border border-gray-200"
                     >
-                      <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                      <div className="p-2 bg-[#F97316]/10 rounded-lg group-hover:bg-[#F97316]/20 transition-colors">
                         <CurrencyDollarIcon className="h-6 w-6 text-[#F97316]" />
                       </div>
                       <div className="text-left">
@@ -655,14 +655,14 @@ export default function Profile() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link
                     to="/admin/dashboard"
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-medium transition-colors"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-medium transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg"
                   >
                     <BuildingOfficeIcon className="h-5 w-5" />
                     Go to Dashboard
                   </Link>
                   <button
                     onClick={logout}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-gray-300 text-gray-700 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-gray-300 text-gray-700 hover:bg-gray-100 rounded-lg font-medium transition-all duration-300"
                   >
                     <ArrowPathIcon className="h-5 w-5" />
                     Logout
@@ -681,20 +681,20 @@ export default function Profile() {
   // Show No Request UI
   if (profileStatus === 'no_request') {
     return (
-      <div className="min-h-screen bg-gray-50 font-sans pt-24">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white font-sans pt-24">
         {/* Profile Header */}
-        <div className="bg-gradient-to-r from-[#F97316] to-[#EA580C]">
+        <div className="bg-gradient-to-r from-[#0F0106] via-[#1a0b10] to-[#2a0f1b] shadow-xl">
           <div className="container mx-auto px-4 py-8 sm:py-12">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl">
-                <UserCircleIcon className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
+              <div className="p-2 sm:p-3 bg-[#F97316]/20 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-[#F97316]/30">
+                <UserCircleIcon className="h-8 w-8 sm:h-12 sm:w-12 text-[#F97316]" />
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-white break-words">
                   Student Profile
                 </h1>
-                <p className="text-white/90 text-sm sm:text-base mt-1">
-                  Submit your admission request
+                <p className="text-white/80 text-sm sm:text-base mt-1">
+                  Submit your admission request to get started
                 </p>
               </div>
             </div>
@@ -705,8 +705,8 @@ export default function Profile() {
         <div className="container mx-auto px-4 -mt-8 pb-12">
           <div className="max-w-3xl mx-auto">
             {!showRequestForm ? (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 text-center animate-fade-in-up">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-orange-100 rounded-full mb-6">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center animate-fade-in-up hover:shadow-xl transition-shadow duration-300">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-[#F97316]/10 rounded-full mb-6 border-2 border-[#F97316]/20">
                   <DocumentPlusIcon className="h-10 w-10 text-[#F97316]" />
                 </div>
                 
@@ -714,26 +714,26 @@ export default function Profile() {
                   No Admission Request Found
                 </h2>
                 
-                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
                   You haven't submitted an admission request yet. 
-                  Please fill out the form to request hostel accommodation.
+                  Submit your request now to reserve a spot in our premium hostels.
                 </p>
 
                 <button
                   onClick={() => setShowRequestForm(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-medium transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg font-medium transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg"
                 >
                   <DocumentPlusIcon className="h-5 w-5" />
                   Submit Admission Request
                 </button>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow duration-300">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-gray-900">Admission Request Form</h2>
                   <button
                     onClick={() => setShowRequestForm(false)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-all duration-300"
                   >
                     <XMarkIcon className="h-6 w-6" />
                   </button>
@@ -742,7 +742,7 @@ export default function Profile() {
                 <form onSubmit={handleSubmitRequest} className="space-y-6">
                   {/* Phone Number */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Phone Number <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -752,25 +752,25 @@ export default function Profile() {
                         name="phone"
                         value={requestForm.phone}
                         onChange={handleRequestChange}
-                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-transparent ${
-                          requestFormErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all ${
+                          requestFormErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                         }`}
                         placeholder="03xxxxxxxxx"
                         maxLength="11"
                       />
                     </div>
                     {requestFormErrors.phone ? (
-                      <p className="mt-1 text-sm text-red-600">{requestFormErrors.phone}</p>
+                      <p className="mt-1 text-sm text-red-600 font-medium">{requestFormErrors.phone}</p>
                     ) : (
                       <p className="mt-1 text-xs text-gray-500">
-                        {requestForm.phone.length || 0}/11 digits
+                        {requestForm.phone.length || 0}/11 digits (e.g., 03001234567)
                       </p>
                     )}
                   </div>
 
                   {/* Guardian Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Guardian Name <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -780,20 +780,20 @@ export default function Profile() {
                         name="guardianName"
                         value={requestForm.guardianName}
                         onChange={handleRequestChange}
-                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-transparent ${
-                          requestFormErrors.guardianName ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-transparent transition-all ${
+                          requestFormErrors.guardianName ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                         }`}
                         placeholder="Guardian's full name"
                       />
                     </div>
                     {requestFormErrors.guardianName && (
-                      <p className="mt-1 text-sm text-red-600">{requestFormErrors.guardianName}</p>
+                      <p className="mt-1 text-sm text-red-600 font-medium">{requestFormErrors.guardianName}</p>
                     )}
                   </div>
 
                   {/* Guardian Phone */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Guardian Phone <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">

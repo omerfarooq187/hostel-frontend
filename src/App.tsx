@@ -6,6 +6,7 @@ import PublicLayout from "./layout/PublicLayout";
 
 // Lazy load all pages for better performance
 const Home = lazy(() => import("./pages/public/Home"));
+const PublicGallery = lazy(() => import("./pages/public/Gallery"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const Profile = lazy(() => import("./pages/public/Profile"));
@@ -64,6 +65,7 @@ export default function App() {
           // Inside your Router component
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/gallery" element={<PublicGallery />} />
           <Route
             path="/profile"
             element={

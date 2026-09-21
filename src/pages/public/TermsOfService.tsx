@@ -4,7 +4,7 @@ import { ScaleIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 export default function TermsOfService() {
   return (
-    <div className="min-h-screen bg-gray-50 pt-24">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pt-24">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Link to="/" className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 mb-6">
           <ArrowLeftIcon className="h-4 w-4" />
@@ -18,7 +18,7 @@ export default function TermsOfService() {
           <h1 className="text-3xl font-bold text-gray-900">Terms of Service</h1>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8 space-y-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6 md:p-8 space-y-6 hover:shadow-xl transition-shadow duration-300">
           <div className="text-sm text-gray-500 border-b border-gray-200 pb-4">
             Last Updated: March 2025
           </div>
